@@ -9,6 +9,7 @@
 #include "effect/effect-characteristics.h"
 #include "effect/effect-processor.h"
 #include "effect/spells-effect-util.h"
+#include "system/redrawing-flags-updater.h"
 #include "flavor/flavor-describer.h"
 #include "flavor/object-flavor-types.h"
 #include "floor/cave.h"
@@ -666,7 +667,13 @@ void exe_fire(PlayerType *player_ptr, INVENTORY_IDX item, ItemEntity *j_ptr, SPE
                     }
                     /* Forget the wall */
                     reset_bits(g_ptr->info, (CAVE_MARK));
-                    set_bits(player_ptr->update, PU_VIEW | PU_LITE | PU_FLOW | PU_MONSTER_LITE);
+                    const auto &flags = EnumClassFlagGroup<StatusRedrawingFlag>{
+                        StatusRedrawingFlag::VIEW,
+                        StatusRedrawingFlag::LITE,
+                        StatusRedrawingFlag::FLOW,
+                        StatusRedrawingFlag::MONSTER_LITE,
+                    };
+                    RedrawingFlagsUpdater::get_instance().set_flags(flags);
 
                     /* Destroy the wall */
                     cave_alter_feat(player_ptr, ny, nx, TerrainCharacteristics::HURT_ROCK);
