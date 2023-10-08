@@ -39,6 +39,7 @@
 #include "timed-effect/timed-effects.h"
 #include "view/display-messages.h"
 
+
 /*!
  * @brief バーノール・ルパートのRF6_SPECIALの処理。分裂・合体。 /
  * @param player_ptr プレイヤーへの参照ポインタ
