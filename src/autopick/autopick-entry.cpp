@@ -24,10 +24,13 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 
+namespace {
 #ifdef JP
-static char kanji_colon[] = "：";
+constexpr std::string_view kanji_colon = "：";
 #endif
+}
 
 /*!
  * @brief A function to create new entry
@@ -315,7 +318,7 @@ bool autopick_new_entry(autopick_type *entry, std::string_view str_view, bool al
         ptr++;
     }
 #ifdef JP
-    else if (ptr[0] == kanji_colon[0] && ptr[1] == kanji_colon[1]) {
+    else if (std::string_view(ptr).substr(0, 2) == kanji_colon) {
         ptr += 2;
     }
 #endif
