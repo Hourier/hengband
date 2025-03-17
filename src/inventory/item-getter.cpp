@@ -82,18 +82,17 @@ static bool check_item_tag_aux(PlayerType *player_ptr, ItemSelection *item_selec
  * @param prev_tag 前回選択したアイテムのタグ (のはず)
  * @return プレイヤーによりアイテムが選択されたならTRUEを返す
  */
-static bool check_item_tag_inventory(PlayerType *player_ptr, ItemSelection *item_selection_ptr, char *prev_tag, const ItemTester &item_tester)
+static std::optional<short> check_item_tag_inventory(PlayerType *player_ptr, ItemSelection *item_selection_ptr, short cp_initial, char *prev_tag, const ItemTester &item_tester)
 {
-    auto &cp = item_selection_ptr->cp;
-    auto should_check = !item_selection_ptr->inven || (cp < 0) || (cp >= INVEN_PACK);
-    should_check &= !item_selection_ptr->equip || (cp < INVEN_MAIN_HAND) || (cp >= INVEN_TOTAL);
+    auto should_check = !item_selection_ptr->inven || (cp_initial < 0) || (cp_initial >= INVEN_PACK);
+    should_check &= !item_selection_ptr->equip || (cp_initial < INVEN_MAIN_HAND) || (cp_initial >= INVEN_TOTAL);
     if (should_check) {
-        return false;
+        return std::nullopt;
     }
 
     if (*prev_tag && command_cmd) {
         auto flag = false;
-        const auto use_flag = (cp >= INVEN_MAIN_HAND) ? USE_EQUIP : USE_INVEN;
+        const auto use_flag = (cp_initial >= INVEN_MAIN_HAND) ? USE_EQUIP : USE_INVEN;
         flag |= !get_tag(player_ptr, &item_selection_ptr->k, *prev_tag, use_flag, item_tester);
         flag |= !get_item_okay(player_ptr, item_selection_ptr->k, item_tester);
 
@@ -108,17 +107,16 @@ static bool check_item_tag_inventory(PlayerType *player_ptr, ItemSelection *item
             return false;
         }
 
-        cp = item_selection_ptr->k;
         command_cmd = 0;
-        return true;
+        return item_selection_ptr->k;
     }
 
-    if (!get_item_okay(player_ptr, cp, item_tester)) {
-        return false;
+    if (!get_item_okay(player_ptr, cp_initial, item_tester)) {
+        return std::nullopt;
     }
 
     command_cmd = 0;
-    return true;
+    return cp_initial;
 }
 
 /*!
@@ -145,7 +143,13 @@ static bool check_item_tag(PlayerType *player_ptr, ItemSelection *item_selection
         return true;
     }
 
-    return check_item_tag_inventory(player_ptr, item_selection_ptr, prev_tag, item_tester);
+    const auto cp = check_item_tag_inventory(player_ptr, item_selection_ptr, item_selection_ptr->cp, prev_tag, item_tester);
+    if (!cp) {
+        return false;
+    }
+
+    item_selection_ptr->cp = *cp;
+    return true;
 }
 
 /*!
