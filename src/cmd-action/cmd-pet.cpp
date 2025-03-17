@@ -363,7 +363,6 @@ static void do_name_pet(PlayerType *player_ptr)
  */
 void do_cmd_pet(PlayerType *player_ptr)
 {
-    COMMAND_CODE i = 0;
     int powers[36]{};
     std::string power_desc[36];
     bool flag, redraw;
@@ -523,7 +522,10 @@ void do_cmd_pet(PlayerType *player_ptr)
         }
     }
 
-    if (!(repeat_pull(&i) && (i >= 0) && (i < num))) {
+    const auto code_repeat = repeat_pull();
+    short code = 0;
+    if ((code_repeat < 0) || (code_repeat >= num)) {
+        code = *code_repeat;
         flag = false;
         redraw = false;
 
@@ -587,7 +589,7 @@ void do_cmd_pet(PlayerType *player_ptr)
                 case 'X':
                 case '\r':
                 case '\n':
-                    i = menu_line - 1;
+                    code = menu_line - 1;
                     should_redraw_cursor = false;
                     break;
                 }
@@ -638,11 +640,11 @@ void do_cmd_pet(PlayerType *player_ptr)
             }
 
             if (!use_menu) {
-                i = A2I(choice);
+                code = A2I(choice);
             }
 
             /* Totally Illegal */
-            if ((i < 0) || (i >= num)) {
+            if ((code < 0) || (code >= num)) {
                 bell();
                 continue;
             }
@@ -660,9 +662,9 @@ void do_cmd_pet(PlayerType *player_ptr)
             return;
         }
 
-        repeat_push(i);
+        repeat_push(code);
     }
-    switch (powers[i]) {
+    switch (powers[code]) {
     case PET_DISMISS: /* Dismiss pets */
     {
         /* Check pets (backwards) */
