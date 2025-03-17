@@ -126,30 +126,23 @@ static std::optional<short> check_item_tag_inventory(PlayerType *player_ptr, Ite
  * @param prev_tag 前回選択したアイテムのタグ (のはず)
  * @return プレイヤーによりアイテムが選択されたならTRUEを返す
  */
-static bool check_item_tag(PlayerType *player_ptr, ItemSelection *item_selection_ptr, char *prev_tag, const ItemTester &item_tester)
+static std::optional<short> check_item_tag(PlayerType *player_ptr, ItemSelection *item_selection_ptr, char *prev_tag, const ItemTester &item_tester)
 {
     const auto code = repeat_pull();
     if (!code) {
-        return false;
+        return std::nullopt;
     }
 
-    item_selection_ptr->cp = *code;
-    if (item_selection_ptr->mode & USE_FORCE && (item_selection_ptr->cp == INVEN_FORCE)) {
+    if (item_selection_ptr->mode & USE_FORCE && (*code == INVEN_FORCE)) {
         command_cmd = 0;
-        return true;
+        return *code;
     }
 
     if (check_item_tag_aux(player_ptr, item_selection_ptr, item_selection_ptr->cp, item_tester)) {
-        return true;
+        return *code;
     }
 
-    const auto cp = check_item_tag_inventory(player_ptr, item_selection_ptr, item_selection_ptr->cp, prev_tag, item_tester);
-    if (!cp) {
-        return false;
-    }
-
-    item_selection_ptr->cp = *cp;
-    return true;
+    return check_item_tag_inventory(player_ptr, item_selection_ptr, *code, prev_tag, item_tester);
 }
 
 /*!
@@ -223,8 +216,9 @@ bool get_item(PlayerType *player_ptr, OBJECT_IDX *cp, concptr pmt, concptr str, 
 
     ItemSelection item_selection(mode);
     check_item_selection_mode(&item_selection);
-    if (check_item_tag(player_ptr, &item_selection, &prev_tag, item_tester)) {
-        *cp = item_selection.cp;
+    const auto code = check_item_tag(player_ptr, &item_selection, &prev_tag, item_tester);
+    if (code) {
+        *cp = *code;
         return true;
     }
 
@@ -265,9 +259,8 @@ bool get_item(PlayerType *player_ptr, OBJECT_IDX *cp, concptr pmt, concptr str, 
 
     if (item_selection.floor) {
         for (const auto this_o_idx : player_ptr->current_floor_ptr->grid_array[player_ptr->y][player_ptr->x].o_idx_list) {
-            ItemEntity *o_ptr;
-            o_ptr = player_ptr->current_floor_ptr->o_list[this_o_idx].get();
-            if ((item_tester.okay(o_ptr) || (item_selection.mode & USE_FULL)) && o_ptr->marked.has(OmType::FOUND)) {
+            const auto &item = *player_ptr->current_floor_ptr->o_list[this_o_idx];
+            if ((item_tester.okay(&item) || (item_selection.mode & USE_FULL)) && item.marked.has(OmType::FOUND)) {
                 item_selection.allow_floor = true;
             }
         }
