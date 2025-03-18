@@ -8,6 +8,11 @@
 #include <string_view>
 #include <vector>
 
+enum class TrimCharacters {
+    TAB_SPACE,
+    SPACE_ONLY,
+};
+
 size_t angband_strcpy(char *buf, std::string_view src, size_t bufsize);
 size_t angband_strcat(char *buf, std::string_view src, size_t bufsize);
 char *angband_strstr(const char *haystack, std::string_view needle);
@@ -16,9 +21,9 @@ char *ltrim(char *p);
 char *rtrim(char *p);
 int strrncmp(const char *s1, const char *s2, int len);
 bool str_find(const std::string &src, std::string_view find);
-std::string str_trim(std::string_view str);
-std::string str_rtrim(std::string_view str);
-std::string str_ltrim(std::string_view str);
+std::string str_trim(std::string_view str, TrimCharacters tc = TrimCharacters::TAB_SPACE);
+std::string str_rtrim(std::string_view str, TrimCharacters tc = TrimCharacters::TAB_SPACE);
+std::string str_ltrim(std::string_view str, TrimCharacters tc = TrimCharacters::TAB_SPACE);
 std::vector<std::string> str_split(std::string_view str, char delim, bool trim = false, int num = 0);
 std::vector<std::string> str_separate(std::string_view str, size_t len);
 std::string str_erase(std::string str, std::string_view erase_chars);

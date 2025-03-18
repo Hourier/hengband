@@ -230,11 +230,20 @@ bool str_find(const std::string &src, std::string_view find)
  * 文字列全体が空白の場合は空文字列を返す。
  *
  * @param str 操作の対象とする文字列
+ * @param tc 空白パターン
  * @return std::string strの両端の空白を削除した文字列
  */
-std::string str_trim(std::string_view str)
+std::string str_trim(std::string_view str, TrimCharacters tc)
 {
-    return str | trim_front | trim_back | ranges::to<std::string>();
+    const auto trim = tc == TrimCharacters::TAB_SPACE ? " \t" : " ";
+    const auto start_pos = str.find_first_not_of(trim);
+    const auto end_pos = str.find_last_not_of(trim);
+
+    if (start_pos == std::string_view::npos || end_pos == std::string_view::npos) {
+        return std::string();
+    }
+
+    return std::string(str.substr(start_pos, end_pos - start_pos + 1));
 }
 
 /**
@@ -245,11 +254,18 @@ std::string str_trim(std::string_view str)
  * 文字列全体が空白の場合は空文字列を返す。
  *
  * @param str 操作の対象とする文字列
+ * @param tc 空白パターン
  * @return std::string strの右端の空白を削除した文字列
  */
-std::string str_rtrim(std::string_view str)
+std::string str_rtrim(std::string_view str, TrimCharacters tc)
 {
-    return str | trim_back | ranges::to<std::string>();
+    const auto trim = tc == TrimCharacters::TAB_SPACE ? " \t" : " ";
+    const auto end_pos = str.find_last_not_of(trim);
+    if (end_pos == std::string_view::npos) {
+        return std::string();
+    }
+
+    return std::string(str.substr(0, end_pos + 1));
 }
 
 /**
@@ -260,11 +276,18 @@ std::string str_rtrim(std::string_view str)
  * 文字列全体が空白の場合は空文字列を返す。
  *
  * @param str 操作の対象とする文字列
+ * @param tc 空白パターン
  * @return std::string strの左端の空白を削除した文字列
  */
-std::string str_ltrim(std::string_view str)
+std::string str_ltrim(std::string_view str, TrimCharacters tc)
 {
-    return str | trim_front | ranges::to<std::string>();
+    const auto trim = tc == TrimCharacters::TAB_SPACE ? " \t" : " ";
+    const auto start_pos = str.find_first_not_of(trim);
+    if (start_pos == std::string_view::npos) {
+        return std::string();
+    }
+
+    return std::string(str.substr(start_pos));
 }
 
 /**
