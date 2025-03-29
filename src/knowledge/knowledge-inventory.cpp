@@ -24,14 +24,15 @@
 #include "util/bit-flags-calculator.h"
 #include "util/string-processor.h"
 #include <sstream>
+#include <string>
 
-static concptr inven_res_label = _(
-    "                               酸電火冷毒閃暗破轟獄因沌劣 盲恐乱麻視経感遅活浮",
-    "                               AcElFiCoPoLiDkShSoNtNxCaDi BlFeCfFaSiHlEpSdRgLv");
-
-#define IM_FLAG_STR _("＊", "* ")
-#define HAS_FLAG_STR _("＋", "+ ")
-#define NO_FLAG_STR _("・", ". ")
+namespace {
+const std::string INVENTORY_RESISTANCE_LABELS = _(
+    "                               酸電火冷毒閃暗破轟獄因沌劣 盲恐乱麻視経感遅活浮\n",
+    "                               AcElFiCoPoLiDkShSoNtNxCaDi BlFeCfFaSiHlEpSdRgLv\n");
+constexpr auto HAS_FLAG_STRENGTH = _("＋", "+ ");
+constexpr auto HAS_NO_FLAG_STRENGTH = _("・", ". ");
+}
 
 /*!
  * @brief 4元素耐性を表示する
@@ -42,7 +43,8 @@ static concptr inven_res_label = _(
  */
 static void print_im_or_res_flag(tr_type immunity, tr_type resistance, const TrFlags &flags, FILE *fff)
 {
-    fputs(flags.has(immunity) ? IM_FLAG_STR : (flags.has(resistance) ? HAS_FLAG_STR : NO_FLAG_STR), fff);
+    constexpr auto immunity_flag_strength = _("＊", "* ");
+    fputs(flags.has(immunity) ? immunity_flag_strength : (flags.has(resistance) ? HAS_FLAG_STRENGTH : HAS_NO_FLAG_STRENGTH), fff);
 }
 
 /*!
@@ -53,7 +55,7 @@ static void print_im_or_res_flag(tr_type immunity, tr_type resistance, const TrF
  */
 static void print_flag(tr_type tr, const TrFlags &flags, FILE *fff)
 {
-    fputs(flags.has(tr) ? HAS_FLAG_STR : NO_FLAG_STR, fff);
+    fputs(flags.has(tr) ? HAS_FLAG_STRENGTH : HAS_NO_FLAG_STRENGTH, fff);
 }
 
 /*!
@@ -158,7 +160,7 @@ static void add_res_label(int *label_number, FILE *fff)
     (*label_number)++;
     if (*label_number == 9) {
         *label_number = 0;
-        fprintf(fff, "%s\n", inven_res_label);
+        fputs(INVENTORY_RESISTANCE_LABELS.data(), fff);
     }
 }
 
@@ -178,7 +180,7 @@ static void reset_label_number(int *label_number, FILE *fff)
     }
 
     *label_number = 0;
-    fprintf(fff, "%s\n", inven_res_label);
+    fputs(INVENTORY_RESISTANCE_LABELS.data(), fff);
 }
 
 /*!
@@ -260,7 +262,7 @@ void do_cmd_knowledge_inventory(PlayerType *player_ptr)
         return;
     }
 
-    fprintf(fff, "%s\n", inven_res_label);
+    fputs(INVENTORY_RESISTANCE_LABELS.data(), fff);
     int label_number = 0;
     for (auto tval : TV_WEARABLE_RANGE) {
         reset_label_number(&label_number, fff);
