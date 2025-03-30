@@ -33,13 +33,14 @@
  * @param max_idx briefに挙げた各リストにおける最大数
  * @details rumor.txt (rumor_j.txt) の定義により、常にランダム ("*")。但し拡張性のため固定値の場合も残す.
  */
-static short get_rumor_num(std::string_view zz, short max_idx)
+template <typename T>
+static T get_rumor_num(std::string_view zz, short max_idx)
 {
     if (zz == "*") {
-        return randnum1<short>(max_idx);
+        return static_cast<T>(randint1(max_idx));
     }
 
-    return static_cast<short>(std::atoi(zz.data()));
+    return static_cast<T>(std::stoi(zz.data()));
 }
 
 static std::string bind_rumor_name(std::string_view base, std::string_view item_name)
@@ -83,7 +84,7 @@ static std::pair<FixedArtifactId, const ArtifactType *> get_artifact_definition(
 {
     const auto &artifacts = ArtifactList::get_instance();
     const auto max_idx = enum2i(artifacts.rbegin()->first);
-    const auto fa_id = i2enum<FixedArtifactId>(get_rumor_num(artifact_name.data(), max_idx));
+    const auto fa_id = get_rumor_num<FixedArtifactId>(artifact_name.data(), max_idx);
     const auto &artifact = artifacts.get_artifact(fa_id);
     return { fa_id, &artifact };
 }
@@ -130,7 +131,7 @@ void display_rumor(PlayerType *player_ptr, bool ex)
         // @details プレイヤーもダミーで入っているので、1つ引いておかないと数が合わなくなる.
         auto &monraces = MonraceList::get_instance();
         const auto monraces_size = static_cast<short>(monraces.size() - 1);
-        auto monrace_id = i2enum<MonraceId>(get_rumor_num(monster_name, monraces_size));
+        auto monrace_id = get_rumor_num<MonraceId>(monster_name, monraces_size);
         auto &monrace = monraces.get_monrace(monrace_id);
         full_name = monrace.name;
         if (!monrace.r_sights) {
@@ -147,18 +148,18 @@ void display_rumor(PlayerType *player_ptr, bool ex)
             rumor_format = _("%sに帰還できるようになった。", "You can recall to %s.");
         }
     } else if (category == "TOWN") {
-        IDX t_idx;
+        short town_id;
         const auto &town_name = tokens[1];
         while (true) {
-            t_idx = get_rumor_num(town_name, VALID_TOWNS);
-            if (!towns_info[t_idx].name.empty()) {
+            town_id = get_rumor_num<short>(town_name, VALID_TOWNS);
+            if (!towns_info[town_id].name.empty()) {
                 break;
             }
         }
 
-        full_name = towns_info[t_idx].name;
-        int32_t visit = (1UL << (t_idx - 1));
-        if ((t_idx != SECRET_TOWN) && !(player_ptr->visit & visit)) {
+        full_name = towns_info[town_id].name;
+        const auto visit = 1U << (town_id - 1);
+        if ((town_id != SECRET_TOWN) && !(player_ptr->visit & visit)) {
             player_ptr->visit |= visit;
             rumor_format = _("%sに行ったことがある気がする。", "You feel you have been to %s.");
         }
