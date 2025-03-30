@@ -131,13 +131,15 @@ static void do_cmd_knowledge_inventory_aux(PlayerType *player_ptr, FILE *fff, co
  * @param label_number 現在の行数
  * @param fff 一時ファイルへの参照ポインタ
  */
-static void add_res_label(int *label_number, FILE *fff)
+static int add_res_label(int label_number_initial, FILE *fff)
 {
-    (*label_number)++;
-    if (*label_number == 9) {
-        *label_number = 0;
+    auto label_number = label_number_initial + 1;
+    if (label_number == 9) {
+        label_number = 0;
         fputs(INVENTORY_RESISTANCE_LABELS.data(), fff);
     }
+
+    return label_number;
 }
 
 /*!
@@ -145,17 +147,16 @@ static void add_res_label(int *label_number, FILE *fff)
  * @param label_number 現在の行数
  * @param fff 一時ファイルへの参照ポインタ
  */
-static void reset_label_number(int *label_number, FILE *fff)
+static void reset_label_number(int label_number, FILE *fff)
 {
-    if (*label_number == 0) {
+    if (label_number == 0) {
         return;
     }
 
-    for (; *label_number < 9; (*label_number)++) {
+    for (auto i = label_number; label_number < 9; i++) {
         fputc('\n', fff);
     }
 
-    *label_number = 0;
     fputs(INVENTORY_RESISTANCE_LABELS.data(), fff);
 }
 
@@ -165,18 +166,22 @@ static void reset_label_number(int *label_number, FILE *fff)
  * @param tval アイテム主分類番号
  * @param label_number 現在の行数
  * @param fff ファイルへの参照ポインタ
+ * @return 画面表示後の行数
  */
-static void show_wearing_equipment_resistances(PlayerType *player_ptr, ItemKindType tval, int *label_number, FILE *fff)
+static int show_wearing_equipment_resistances(PlayerType *player_ptr, ItemKindType tval, int label_number_initial, FILE *fff)
 {
-    for (int i = INVEN_MAIN_HAND; i < INVEN_TOTAL; i++) {
+    auto label_number = label_number_initial;
+    for (short i = INVEN_MAIN_HAND; i < INVEN_TOTAL; i++) {
         const auto &item = *player_ptr->inventory[i];
         if (!item.has_knowledge(tval)) {
             continue;
         }
 
         do_cmd_knowledge_inventory_aux(player_ptr, fff, item, _("装", "E "));
-        add_res_label(label_number, fff);
+        label_number = add_res_label(label_number, fff);
     }
+
+    return label_number;
 }
 
 /*!
@@ -185,18 +190,22 @@ static void show_wearing_equipment_resistances(PlayerType *player_ptr, ItemKindT
  * @param tval アイテム主分類番号
  * @param label_number 現在の行数
  * @param fff ファイルへの参照ポインタ
+ * @return 画面表示後の行数
  */
-static void show_holding_equipment_resistances(PlayerType *player_ptr, ItemKindType tval, int *label_number, FILE *fff)
+static int show_holding_equipment_resistances(PlayerType *player_ptr, ItemKindType tval, int label_number_initial, FILE *fff)
 {
-    for (int i = 0; i < INVEN_PACK; i++) {
+    auto label_number = label_number_initial;
+    for (short i = 0; i < INVEN_PACK; i++) {
         const auto &item = *player_ptr->inventory[i];
         if (!item.has_knowledge(tval)) {
             continue;
         }
 
         do_cmd_knowledge_inventory_aux(player_ptr, fff, item, _("持", "I "));
-        add_res_label(label_number, fff);
+        label_number = add_res_label(label_number, fff);
     }
+
+    return label_number;
 }
 
 /*!
@@ -205,19 +214,23 @@ static void show_holding_equipment_resistances(PlayerType *player_ptr, ItemKindT
  * @param tval アイテム主分類番号
  * @param label_number 現在の行数
  * @param fff ファイルへの参照ポインタ
+ * @return 画面表示後の行数
  */
-static void show_home_equipment_resistances(PlayerType *player_ptr, ItemKindType tval, int *label_number, FILE *fff)
+static int show_home_equipment_resistances(PlayerType *player_ptr, ItemKindType tval, int label_number_initial, FILE *fff)
 {
+    auto label_number = label_number_initial;
     const auto &store = towns_info[1].get_store(StoreSaleType::HOME);
-    for (int i = 0; i < store.stock_num; i++) {
+    for (short i = 0; i < store.stock_num; i++) {
         const auto &item = *store.stock[i];
         if (!item.has_knowledge(tval)) {
             continue;
         }
 
         do_cmd_knowledge_inventory_aux(player_ptr, fff, item, _("家", "H "));
-        add_res_label(label_number, fff);
+        label_number = add_res_label(label_number, fff);
     }
+
+    return label_number;
 }
 
 /*
@@ -233,12 +246,12 @@ void do_cmd_knowledge_inventory(PlayerType *player_ptr)
     }
 
     fputs(INVENTORY_RESISTANCE_LABELS.data(), fff);
-    int label_number = 0;
+    auto label_number = 0;
     for (auto tval : TV_WEARABLE_RANGE) {
-        reset_label_number(&label_number, fff);
-        show_wearing_equipment_resistances(player_ptr, tval, &label_number, fff);
-        show_holding_equipment_resistances(player_ptr, tval, &label_number, fff);
-        show_home_equipment_resistances(player_ptr, tval, &label_number, fff);
+        reset_label_number(label_number, fff);
+        label_number = show_wearing_equipment_resistances(player_ptr, tval, 0, fff);
+        label_number = show_holding_equipment_resistances(player_ptr, tval, label_number, fff);
+        label_number = show_home_equipment_resistances(player_ptr, tval, label_number, fff);
     }
 
     angband_fclose(fff);
