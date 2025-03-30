@@ -21,6 +21,7 @@
 #include "world/world.h"
 #include <algorithm>
 #include <cstdlib>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -63,17 +64,16 @@ static std::string bind_rumor_name(std::string_view base, std::string_view item_
  * @return トークン読み込み成否 とトークン群の配列
  * @todo tmp_tokensを使わず単なるsplitにすればもっと簡略化できそう
  */
-static std::pair<bool, std::vector<std::string>> get_rumor_tokens(std::string rumor)
+static std::optional<std::vector<std::string>> get_rumor_tokens(std::string rumor)
 {
     constexpr auto num_tokens = 3;
     char *tmp_tokens[num_tokens];
     if (tokenize(rumor.data() + 2, num_tokens, tmp_tokens, TOKENIZE_CHECKQUOTE) != num_tokens) {
         msg_print(_("この情報は間違っている。", "This information is wrong."));
-        return { false, {} };
+        return std::nullopt;
     }
 
-    std::vector<std::string> tokens(std::begin(tmp_tokens), std::end(tmp_tokens));
-    return { true, tokens };
+    return std::vector<std::string>(std::begin(tmp_tokens), std::end(tmp_tokens));
 }
 
 /*!
@@ -109,16 +109,16 @@ void display_rumor(PlayerType *player_ptr, bool ex)
         return;
     }
 
-    const auto &[is_correct, tokens] = get_rumor_tokens(rumor);
-    if (!is_correct) {
+    const auto tokens = get_rumor_tokens(rumor);
+    if (!tokens) {
         return;
     }
 
     std::string rumor_format;
     std::string full_name;
-    const auto &category = tokens[0];
+    const auto &category = tokens->at(0);
     if (category == "ARTIFACT") {
-        const auto &artifact_name = tokens[1];
+        const auto &artifact_name = tokens->at(1);
         const auto &[a_idx, a_ptr] = get_artifact_definition(artifact_name);
         const auto bi_id = BaseitemList::get_instance().lookup_baseitem_id(a_ptr->bi_key);
         ItemEntity item(bi_id);
@@ -126,7 +126,7 @@ void display_rumor(PlayerType *player_ptr, bool ex)
         item.ident = IDENT_STORE;
         full_name = describe_flavor(player_ptr, item, OD_NAME_ONLY);
     } else if (category == "MONSTER") {
-        const auto &monster_name = tokens[1];
+        const auto &monster_name = tokens->at(1);
 
         // @details プレイヤーもダミーで入っているので、1つ引いておかないと数が合わなくなる.
         auto &monraces = MonraceList::get_instance();
@@ -139,7 +139,7 @@ void display_rumor(PlayerType *player_ptr, bool ex)
         }
     } else if (category == "DUNGEON") {
         const auto &dungeons = DungeonList::get_instance();
-        const auto dungeon_id = i2enum<DungeonId>(std::stoi(tokens[1]));
+        const auto dungeon_id = i2enum<DungeonId>(std::stoi(tokens->at(1)));
         const auto &dungeon = dungeons.get_dungeon(dungeon_id);
         full_name = dungeon.name;
         auto &dungeon_record = DungeonRecords::get_instance().get_record(dungeon_id);
@@ -149,7 +149,7 @@ void display_rumor(PlayerType *player_ptr, bool ex)
         }
     } else if (category == "TOWN") {
         short town_id;
-        const auto &town_name = tokens[1];
+        const auto &town_name = tokens->at(1);
         while (true) {
             town_id = get_rumor_num<short>(town_name, VALID_TOWNS);
             if (!towns_info[town_id].name.empty()) {
@@ -167,7 +167,7 @@ void display_rumor(PlayerType *player_ptr, bool ex)
         THROW_EXCEPTION(std::runtime_error, "Unknown token exists in rumor.txt");
     }
 
-    const auto rumor_msg = bind_rumor_name(tokens[2], full_name);
+    const auto rumor_msg = bind_rumor_name(tokens->at(2), full_name);
     msg_print(rumor_msg);
     if (!rumor_format.empty()) {
         msg_print(nullptr);
