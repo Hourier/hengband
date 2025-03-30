@@ -26,7 +26,6 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <utility>
 
 /*
  * @brief 固定アーティファクト、モンスター、町 をランダムに1つ選ぶ
@@ -80,13 +79,10 @@ static std::optional<std::vector<std::string>> get_rumor_tokens(std::string rumo
  * @brief 固定アーティファクト番号とその定義を、ランダムに抽選する
  * @param artifact_name rumor.txt (rumor_j.txt)の定義により、常に"*" (ランダム)
  */
-static std::pair<FixedArtifactId, const ArtifactType *> get_artifact_definition(std::string_view artifact_name)
+static FixedArtifactId get_artifact_definition(std::string_view artifact_name)
 {
-    const auto &artifacts = ArtifactList::get_instance();
-    const auto max_idx = enum2i(artifacts.rbegin()->first);
-    const auto fa_id = get_rumor_num<FixedArtifactId>(artifact_name.data(), max_idx);
-    const auto &artifact = artifacts.get_artifact(fa_id);
-    return { fa_id, &artifact };
+    const short max_idx = ArtifactList::get_instance().size() - 1;
+    return get_rumor_num<FixedArtifactId>(artifact_name.data(), max_idx);
 }
 
 void display_rumor(PlayerType *player_ptr, bool ex)
@@ -119,10 +115,11 @@ void display_rumor(PlayerType *player_ptr, bool ex)
     const auto &category = tokens->at(0);
     if (category == "ARTIFACT") {
         const auto &artifact_name = tokens->at(1);
-        const auto &[a_idx, a_ptr] = get_artifact_definition(artifact_name);
-        const auto bi_id = BaseitemList::get_instance().lookup_baseitem_id(a_ptr->bi_key);
+        const auto fa_id = get_artifact_definition(artifact_name);
+        const auto &artifact = ArtifactList::get_instance().get_artifact(fa_id);
+        const auto bi_id = BaseitemList::get_instance().lookup_baseitem_id(artifact.bi_key);
         ItemEntity item(bi_id);
-        item.fa_id = a_idx;
+        item.fa_id = fa_id;
         item.ident = IDENT_STORE;
         full_name = describe_flavor(player_ptr, item, OD_NAME_ONLY);
     } else if (category == "MONSTER") {
