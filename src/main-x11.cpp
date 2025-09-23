@@ -1085,6 +1085,61 @@ static void send_keys(const char *const keys)
 }
 
 /*
+ * Redraw part of a window.
+ */
+static void term_redraw_section(int x1, int y1, int x2, int y2)
+{
+    /* Bounds checking */
+    if (y2 >= game_term->hgt) {
+        y2 = game_term->hgt - 1;
+    }
+
+    if (x2 >= game_term->wid) {
+        x2 = game_term->wid - 1;
+    }
+
+    if (y1 < 0) {
+        y1 = 0;
+    }
+    if (x1 < 0) {
+        x1 = 0;
+    }
+
+    /* Set y limits */
+    game_term->y1 = y1;
+    game_term->y2 = y2;
+
+    /* Set the x limits */
+    for (auto i = game_term->y1; i <= game_term->y2; i++) {
+        auto x1_final = x1;
+        auto x2_final = x2;
+#ifdef JP
+        if (x1_final > 0) {
+            constexpr uint8_t af_kanji2 = 0x20;
+            if (game_term->scr->a[i][x1_final] & af_kanji2) {
+                x1_final--;
+            }
+        }
+
+        if (x2_final < game_term->wid - 1) {
+            constexpr uint8_t af_kanji1 = 0x10;
+            if (game_term->scr->a[i][x2_final] & af_kanji1) {
+                x2_final++;
+            }
+        }
+#endif
+        game_term->x1[i] = x1_final;
+        game_term->x2[i] = x2_final;
+        auto &g_ptr = game_term->old->c[i];
+        for (auto j = x1_final; j <= x2_final; j++) {
+            g_ptr[j] = 0;
+        }
+    }
+
+    term_fresh();
+}
+
+/*
  * Process a keypress event
  */
 static void react_keypress(XKeyEvent *xev)
@@ -1276,14 +1331,6 @@ static void draw_cursor(int x, int y, int len)
 }
 
 /*
- * Remove the selection by redrawing it.
- */
-static void mark_selection_clear(int x1, int y1, int x2, int y2)
-{
-    term_redraw_section(x1, y1, x2, y2);
-}
-
-/*
  * Select an area by drawing a grey box around it.
  * NB. These two functions can cause flicker as the selection is modified,
  * as the game redraws the entire marked section.
@@ -1314,7 +1361,7 @@ static void mark_selection(void)
 
     if (clear) {
         sort_co_ord(&min, &max, &s_ptr->init, &s_ptr->old);
-        mark_selection_clear(min.x, min.y, max.x, max.y);
+        term_redraw_section(min.x, min.y, max.x, max.y);
     }
     if (draw) {
         sort_co_ord(&min, &max, &s_ptr->init, &s_ptr->cur);
