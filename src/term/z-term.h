@@ -211,7 +211,7 @@ void term_putch(int x, int y, const DisplaySymbol &symbol);
 void term_putstr(TERM_LEN x, TERM_LEN y, int n, TERM_COLOR a, std::string_view sv);
 void term_erase(TERM_LEN x, TERM_LEN y, tl::optional<int> n_opt = tl::nullopt);
 void term_clear();
-errr term_redraw();
+void term_redraw();
 errr term_redraw_section(TERM_LEN x1, TERM_LEN y1, TERM_LEN x2, TERM_LEN y2);
 
 int term_get_cursor();
