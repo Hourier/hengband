@@ -159,7 +159,7 @@ bool wr_dungeon(PlayerType *player_ptr)
     auto &floor = *player_ptr->current_floor_ptr;
     floor.forget_lite();
     floor.forget_view();
-    clear_mon_lite(floor);
+    floor.forget_mon_lite();
     static constexpr auto flags = {
         StatusRecalculatingFlag::VIEW,
         StatusRecalculatingFlag::LITE,
