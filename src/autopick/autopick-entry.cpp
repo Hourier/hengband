@@ -27,6 +27,15 @@
 #include <tl/optional.hpp>
 
 namespace {
+std::string_view ltrim_sv_one(std::string_view sv)
+{
+    if (!sv.empty() && sv.front() == ' ') {
+        return sv.substr(1);
+    }
+
+    return sv;
+}
+
 tl::optional<std::string_view> match_key(std::string_view sv, std::string_view key)
 {
     if (!sv.starts_with(key)) {
@@ -34,11 +43,7 @@ tl::optional<std::string_view> match_key(std::string_view sv, std::string_view k
     }
 
     sv.remove_prefix(key.size());
-    if (!sv.empty() && sv.front() == ' ') {
-        return sv.substr(1);
-    }
-
-    return sv;
+    return ltrim_sv_one(sv);
 }
 
 std::string_view ltrim_sv(std::string_view sv)
@@ -138,9 +143,9 @@ bool autopick_new_entry(autopick_type *entry, std::string_view str_view, bool al
     }
 
     std::string_view sv = buf;
-    const char *old_head = nullptr;
-    while (old_head != sv.data()) {
-        old_head = sv.data();
+    std::string_view old_sv;
+    do {
+        old_sv = sv;
         if (const auto sv_opt = match_key(sv, KEY_ALL); sv_opt) {
             sv = *sv_opt;
             entry->add(FLG_ALL);
@@ -310,10 +315,10 @@ bool autopick_new_entry(autopick_type *entry, std::string_view str_view, bool al
             sv = *sv_opt;
             entry->add(FLG_FOURTH);
         }
-    }
+    } while (old_sv != sv);
 
     const auto sv_backup = sv;
-    tl::optional<int> previous_flag = tl::nullopt;
+    tl::optional<int> previous_flag;
     if (const auto sv_opt = match_key(sv, KEY_ARTIFACT); sv_opt) {
         sv = *sv_opt;
         entry->add(FLG_ARTIFACT);
