@@ -19,6 +19,7 @@
 #include "system/item-entity.h"
 #include "system/monrace/monrace-definition.h"
 #include "system/player-type-definition.h"
+#include "util/finalizer.h"
 #include "util/string-processor.h"
 #include <sstream>
 #include <string>
@@ -26,34 +27,27 @@
 #include <tl/optional.hpp>
 
 namespace {
-bool match_key(const char *&ptr, std::string_view key)
+tl::optional<std::string_view> match_key(std::string_view sv, std::string_view key)
 {
-    if (std::strncmp(ptr, key.data(), key.length())) {
-        return false;
+    if (!sv.starts_with(key)) {
+        return tl::nullopt;
     }
 
-    ptr += key.length();
-    if (' ' == *ptr) {
-        ptr++;
+    sv.remove_prefix(key.size());
+    if (!sv.empty() && sv.front() == ' ') {
+        sv.remove_prefix(1);
     }
 
-    return true;
+    return sv;
 }
 
-bool match_key2(const char *&ptr, std::string_view key, const char *&prev_ptr)
+std::string_view ltrim_sv(std::string_view str)
 {
-    prev_ptr = ptr;
-    const auto len = key.length();
-    if (std::strncmp(ptr, key.data(), len)) {
-        return false;
+    while (!str.empty() && (str.front() == ' ')) {
+        str.remove_prefix(1);
     }
 
-    ptr += len;
-    if (*ptr == ' ') {
-        ++ptr;
-    }
-
-    return true;
+    return str;
 }
 
 #ifdef JP
@@ -143,230 +137,303 @@ bool autopick_new_entry(autopick_type *entry, std::string_view str_view, bool al
         return false;
     }
 
-    concptr prev_ptr = buf.data();
-    concptr ptr = buf.data();
-    concptr old_ptr = nullptr;
-    while (old_ptr != ptr) {
-        old_ptr = ptr;
-        if (match_key(ptr, KEY_ALL)) {
+    std::string_view sv = buf;
+    const char *old_head = nullptr;
+    while (old_head != sv.data()) {
+        old_head = sv.data();
+        if (const auto sv_opt = match_key(sv, KEY_ALL); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_ALL);
         }
-        if (match_key(ptr, KEY_COLLECTING)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_COLLECTING); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_COLLECTING);
         }
-        if (match_key(ptr, KEY_UNAWARE)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_UNAWARE); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_UNAWARE);
         }
-        if (match_key(ptr, KEY_UNIDENTIFIED)) {
+        if (const auto sv_opt = match_key(sv, KEY_UNIDENTIFIED); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_UNIDENTIFIED);
         }
-        if (match_key(ptr, KEY_IDENTIFIED)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_IDENTIFIED); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_IDENTIFIED);
         }
-        if (match_key(ptr, KEY_STAR_IDENTIFIED)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_STAR_IDENTIFIED); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_STAR_IDENTIFIED);
         }
-        if (match_key(ptr, KEY_BOOSTED)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_BOOSTED)) {
+            sv = *sv_opt;
             entry->add(FLG_BOOSTED);
         }
 
         /*** Weapons whose dd*ds is more than nn ***/
-        if (match_key2(ptr, KEY_MORE_THAN, prev_ptr)) {
+        auto sv_start = sv;
+        if (const auto sv_opt = match_key(sv, KEY_MORE_THAN); sv_opt) {
             int k = 0;
             entry->dice = 0;
-
-            while (' ' == *ptr) {
-                ptr++;
-            }
-
-            while (is_numeric(*ptr)) {
-                entry->dice = 10 * entry->dice + (*ptr - '0');
-                ptr++;
+            sv = ltrim_sv(sv);
+            while (!sv.empty() && is_numeric(sv.front())) {
+                entry->dice = 10 * entry->dice + (sv.front() - '0');
+                sv.remove_prefix(1);
                 k++;
             }
 
             if (k > 0 && k <= 2) {
-                (void)match_key(ptr, KEY_DICE);
+                const auto sv_opt = match_key(sv, KEY_DICE);
+                if (sv_opt) {
+                    sv = *sv_opt;
+                }
+
                 entry->add(FLG_MORE_DICE);
             } else {
-                ptr = prev_ptr;
+                sv = sv_start;
             }
         }
 
         /*** Items whose magical bonus is more than n ***/
-        if (match_key2(ptr, KEY_MORE_BONUS, prev_ptr)) {
+        sv_start = sv;
+        if (const auto sv_opt = match_key(sv, KEY_MORE_BONUS); sv_opt) {
             int k = 0;
             entry->bonus = 0;
-
-            while (' ' == *ptr) {
-                ptr++;
-            }
-
-            while (is_numeric(*ptr)) {
-                entry->bonus = 10 * entry->bonus + (*ptr - '0');
-                ptr++;
+            sv = ltrim_sv(sv);
+            while (!sv.empty() && is_numeric(sv.front())) {
+                entry->bonus = 10 * entry->bonus + (sv.front() - '0');
+                sv.remove_prefix(1);
                 k++;
             }
 
             if (k > 0 && k <= 2) {
 #ifdef JP
-                (void)match_key(ptr, KEY_MORE_BONUS2);
-#else
-                if (' ' == *ptr) {
-                    ptr++;
+                const auto sv_opt = match_key(sv, KEY_MORE_BONUS2);
+                if (sv_opt) {
+                    sv = *sv_opt;
                 }
+#else
+                sv = ltrim_sv(sv);
 #endif
                 entry->add(FLG_MORE_BONUS);
             } else {
-                ptr = prev_ptr;
+                sv = sv_start;
             }
         }
 
-        if (match_key(ptr, KEY_WORTHLESS)) {
+        if (const auto sv_opt = match_key(sv, KEY_WORTHLESS); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_WORTHLESS);
         }
-        if (match_key(ptr, KEY_EGO)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_EGO); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_EGO);
         }
-        if (match_key(ptr, KEY_GOOD)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_GOOD); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_GOOD);
         }
-        if (match_key(ptr, KEY_NAMELESS)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_NAMELESS); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_NAMELESS);
         }
-        if (match_key(ptr, KEY_AVERAGE)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_AVERAGE); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_AVERAGE);
         }
-        if (match_key(ptr, KEY_RARE)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_RARE); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_RARE);
         }
-        if (match_key(ptr, KEY_COMMON)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_COMMON); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_COMMON);
         }
-        if (match_key(ptr, KEY_WANTED)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_WANTED); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_WANTED);
         }
-        if (match_key(ptr, KEY_UNIQUE)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_UNIQUE); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_UNIQUE);
         }
-        if (match_key(ptr, KEY_HUMAN)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_HUMAN); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_HUMAN);
         }
-        if (match_key(ptr, KEY_UNREADABLE)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_UNREADABLE); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_UNREADABLE);
         }
-        if (match_key(ptr, KEY_REALM1)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_REALM1); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_REALM1);
         }
-        if (match_key(ptr, KEY_REALM2)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_REALM2); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_REALM2);
         }
-        if (match_key(ptr, KEY_FIRST)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_FIRST); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_FIRST);
         }
-        if (match_key(ptr, KEY_SECOND)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_SECOND); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_SECOND);
         }
-        if (match_key(ptr, KEY_THIRD)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_THIRD); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_THIRD);
         }
-        if (match_key(ptr, KEY_FOURTH)) {
+
+        if (const auto sv_opt = match_key(sv, KEY_FOURTH); sv_opt) {
+            sv = *sv_opt;
             entry->add(FLG_FOURTH);
         }
     }
 
+    const auto sv_backup = sv;
     tl::optional<int> previous_flag = tl::nullopt;
-    if (match_key2(ptr, KEY_ARTIFACT, prev_ptr)) {
+    if (const auto sv_opt = match_key(sv, KEY_ARTIFACT); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_ARTIFACT);
         previous_flag = FLG_ARTIFACT;
     }
 
-    if (match_key2(ptr, KEY_ITEMS, prev_ptr)) {
+    if (const auto sv_opt = match_key(sv, KEY_ITEMS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_ITEMS);
         previous_flag = FLG_ITEMS;
-    } else if (match_key2(ptr, KEY_WEAPONS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_WEAPONS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_WEAPONS);
         previous_flag = FLG_WEAPONS;
-    } else if (match_key2(ptr, KEY_FAVORITE_WEAPONS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_FAVORITE_WEAPONS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_FAVORITE_WEAPONS);
         previous_flag = FLG_FAVORITE_WEAPONS;
-    } else if (match_key2(ptr, KEY_ARMORS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_ARMORS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_ARMORS);
         previous_flag = FLG_ARMORS;
-    } else if (match_key2(ptr, KEY_MISSILES, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_MISSILES); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_MISSILES);
         previous_flag = FLG_MISSILES;
-    } else if (match_key2(ptr, KEY_DEVICES, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_DEVICES); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_DEVICES);
         previous_flag = FLG_DEVICES;
-    } else if (match_key2(ptr, KEY_LIGHTS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_LIGHTS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_LIGHTS);
         previous_flag = FLG_LIGHTS;
-    } else if (match_key2(ptr, KEY_JUNKS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_JUNKS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_JUNKS);
         previous_flag = FLG_JUNKS;
-    } else if (match_key2(ptr, KEY_CORPSES, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_CORPSES); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_CORPSES);
         previous_flag = FLG_CORPSES;
-    } else if (match_key2(ptr, KEY_SPELLBOOKS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_SPELLBOOKS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_SPELLBOOKS);
         previous_flag = FLG_SPELLBOOKS;
-    } else if (match_key2(ptr, KEY_HAFTED, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_HAFTED); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_HAFTED);
         previous_flag = FLG_HAFTED;
-    } else if (match_key2(ptr, KEY_SHIELDS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_SHIELDS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_SHIELDS);
         previous_flag = FLG_SHIELDS;
-    } else if (match_key2(ptr, KEY_BOWS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_BOWS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_BOWS);
         previous_flag = FLG_BOWS;
-    } else if (match_key2(ptr, KEY_RINGS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_RINGS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_RINGS);
         previous_flag = FLG_RINGS;
-    } else if (match_key2(ptr, KEY_AMULETS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_AMULETS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_AMULETS);
         previous_flag = FLG_AMULETS;
-    } else if (match_key2(ptr, KEY_SUITS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_SUITS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_SUITS);
         previous_flag = FLG_SUITS;
-    } else if (match_key2(ptr, KEY_CLOAKS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_CLOAKS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_CLOAKS);
         previous_flag = FLG_CLOAKS;
-    } else if (match_key2(ptr, KEY_HELMS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_HELMS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_HELMS);
         previous_flag = FLG_HELMS;
-    } else if (match_key2(ptr, KEY_GLOVES, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_GLOVES); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_GLOVES);
         previous_flag = FLG_GLOVES;
-    } else if (match_key2(ptr, KEY_BOOTS, prev_ptr)) {
+    } else if (const auto sv_opt = match_key(sv, KEY_BOOTS); sv_opt) {
+        sv = *sv_opt;
         entry->add(FLG_BOOTS);
         previous_flag = FLG_BOOTS;
     }
 
-    if (*ptr == ':') {
-        ptr++;
-    }
-#ifdef JP
-    else if (std::string_view(ptr).substr(0, 2) == kanji_colon) {
-        ptr += 2;
-    }
-#endif
-    else if (*ptr == '\0') {
-        if (!previous_flag) {
+    const auto finalizer = util::make_finalizer([&]() {
+        entry->name = std::move(sv);
+        entry->action = act;
+        entry->insc = std::move(inscription);
+    });
+    if (!previous_flag) {
+        if (sv.empty()) {
             entry->add(FLG_ITEMS);
             previous_flag = FLG_ITEMS;
         }
-    } else {
-        if (previous_flag) {
-            entry->remove(*previous_flag);
-            ptr = prev_ptr;
-        }
+
+        return true;
     }
 
-    entry->name = ptr;
-    entry->action = act;
-    entry->insc = std::move(inscription);
+    if (!sv.empty() && sv.front() == ':') {
+        sv.remove_prefix(1);
+        return true;
+    }
 
+#ifdef JP
+    if (sv.substr(0, 2) == kanji_colon) {
+        sv.remove_prefix(2);
+        return true;
+    }
+#endif
+
+    if (sv.empty()) {
+        return true;
+    }
+
+    entry->remove(*previous_flag);
+    sv = sv_backup;
     return true;
 }
 
