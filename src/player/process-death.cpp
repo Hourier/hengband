@@ -27,12 +27,12 @@
 #include "term/screen-processor.h"
 #include "util/buffer-shaper.h"
 #include "util/int-char-converter.h"
-#include "util/string-processor.h"
 #include "view/display-inventory.h"
 #include "view/display-messages.h"
 #include "view/display-player.h"
 #include "world/world.h"
 #include <fmt/format.h>
+#include <sstream>
 
 constexpr auto GRAVE_LINE_WIDTH = 31;
 constexpr auto GRAVE_LINE_START_COL = 11;
@@ -99,11 +99,10 @@ static int show_killing_monster(PlayerType *player_ptr)
     }
 
     if (lines.size() >= 3) {
-        char buf[GRAVE_LINE_WIDTH + 1];
-        angband_strcpy(buf, lines[1], sizeof(buf) - 2);
-        angband_strcat(buf, "…", sizeof(buf));
+        std::stringstream ss;
+        ss << lines[1] << "…";
         show_tomb_line(lines[0], GRAVE_KILLER_NAME_ROW);
-        show_tomb_line(buf, GRAVE_KILLER_NAME_ROW + 1);
+        show_tomb_line(ss.str(), GRAVE_KILLER_NAME_ROW + 1);
         return 1;
     }
 
