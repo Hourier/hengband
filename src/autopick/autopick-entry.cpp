@@ -55,7 +55,7 @@ tl::optional<std::string_view> match_key(std::string_view sv, std::string_view k
 
 struct ParsedNumericValue {
 public:
-    int value;
+    uint8_t value;
     std::string_view remaining_sv;
 };
 
@@ -63,7 +63,7 @@ tl::optional<ParsedNumericValue> parse_numeric_value(std::string_view sv)
 {
     const auto original_sv = ltrim_sv(sv);
     auto current_sv = original_sv;
-    auto parsed_value = 0;
+    uint8_t parsed_value = 0;
     while (!current_sv.empty() && is_numeric(current_sv.front())) {
         parsed_value = 10 * parsed_value + (current_sv.front() - '0');
         current_sv.remove_prefix(1);
@@ -105,36 +105,29 @@ bool autopick_new_entry(autopick_type *entry, std::string_view line_input, bool 
     entry->dice = 0;
     entry->bonus = 0;
 
-    byte act = DO_AUTOPICK | DO_DISPLAY;
+    EnumClassFlagGroup<AutopickMethod> act = { AutopickMethod::AUTOPICK, AutopickMethod::DISPLAY };
     std::string_view line = line_input;
     while (true) {
         if (line.empty()) {
             break;
         }
 
-        if ((act & DO_AUTOPICK) && (line.front() == '!')) {
-            act &= ~DO_AUTOPICK;
-            act |= DO_AUTODESTROY;
+        if (act.has(AutopickMethod::AUTOPICK)) {
+            act.reset(AutopickMethod::AUTOPICK);
+            if (line.front() == '!') {
+                act.set(AutopickMethod::AUTODESTROY);
+            } else if (line.front() == '~') {
+                act.set(AutopickMethod::NOT_AUTOPICK);
+            } else if (line.front() == ';') {
+                act.set(AutopickMethod::QUERY_AUTOPICK);
+            }
+
             line.remove_prefix(1);
             continue;
         }
 
-        if ((act & DO_AUTOPICK) && (line.front() == '~')) {
-            act &= ~DO_AUTOPICK;
-            act |= DONT_AUTOPICK;
-            line.remove_prefix(1);
-            continue;
-        }
-
-        if ((act & DO_AUTOPICK) && (line.front() == ';')) {
-            act &= ~DO_AUTOPICK;
-            act |= DO_QUERY_AUTOPICK;
-            line.remove_prefix(1);
-            continue;
-        }
-
-        if ((act & DO_DISPLAY) && (line.front() == '(')) {
-            act &= ~DO_DISPLAY;
+        if (act.has(AutopickMethod::DISPLAY) && (line.front() == '(')) {
+            act.reset(AutopickMethod::DISPLAY);
             line.remove_prefix(1);
             continue;
         }
@@ -342,7 +335,7 @@ void autopick_entry_from_object(PlayerType *player_ptr, autopick_type *entry, co
     bool name = true;
     entry->name.clear();
     entry->insc = o_ptr->inscription.value_or("");
-    entry->action = DO_AUTOPICK | DO_DISPLAY;
+    entry->action.set({ AutopickMethod::AUTOPICK, AutopickMethod::DISPLAY });
     entry->flags[0] = entry->flags[1] = 0L;
     entry->dice = 0;
 
@@ -543,19 +536,19 @@ static std::string shape_autopick_key(const std::string &key)
 std::string autopick_line_from_entry(const autopick_type &entry)
 {
     std::stringstream ss;
-    if (!(entry.action & DO_DISPLAY)) {
+    if (entry.action.has_not(AutopickMethod::DISPLAY)) {
         ss << '(';
     }
 
-    if (entry.action & DO_QUERY_AUTOPICK) {
+    if (entry.action.has(AutopickMethod::QUERY_AUTOPICK)) {
         ss << ';';
     }
 
-    if (entry.action & DO_AUTODESTROY) {
+    if (entry.action.has(AutopickMethod::AUTODESTROY)) {
         ss << '!';
     }
 
-    if (entry.action & DONT_AUTOPICK) {
+    if (entry.action.has(AutopickMethod::NOT_AUTOPICK)) {
         ss << '~';
     }
 
