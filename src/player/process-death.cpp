@@ -99,10 +99,9 @@ static int show_killing_monster(PlayerType *player_ptr)
     }
 
     if (lines.size() >= 3) {
-        char buf[GRAVE_LINE_WIDTH + 1];
-        angband_strcpy(buf, lines[1], sizeof(buf) - 2);
-        angband_strcat(buf, "…", sizeof(buf));
         show_tomb_line(lines[0], GRAVE_KILLER_NAME_ROW);
+        const auto omit = _(1, 2); //!< 前を2文字削るためには日英でスペースが異なる.
+        const auto buf = fmt::format(_("{}…", "{}..."), str_substr(lines[1], 0, GRAVE_LINE_WIDTH - omit));
         show_tomb_line(buf, GRAVE_KILLER_NAME_ROW + 1);
         return 1;
     }
