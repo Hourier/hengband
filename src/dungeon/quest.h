@@ -145,6 +145,7 @@ public:
     QuestType &get_quest(QuestId id);
     const QuestType &get_quest(QuestId id) const;
     std::vector<QuestId> get_sorted_quest_ids() const;
+    bool is_blocking_quest(QuestId quest_id) const;
 
 private:
     static QuestList instance;

@@ -75,18 +75,15 @@ void teleport_level(PlayerType *player_ptr, MONSTER_IDX m_idx)
         return;
     }
 
-    if ((m_idx <= 0) && player_ptr->anti_tele) {
+    auto should_block_teleport = (m_idx == 0) && player_ptr->anti_tele;
+    const auto is_blocking_quest = floor.is_in_blocking_quest();
+    should_block_teleport |= ironman_downward && is_blocking_quest;
+    if (should_block_teleport) {
         msg_print(_("不思議な力がテレポートを防いだ！", "A mysterious force prevents you from teleporting!"));
         return;
     }
 
-    bool go_up;
-    if (one_in_(2)) {
-        go_up = true;
-    } else {
-        go_up = false;
-    }
-
+    auto go_up = one_in_(2);
     if ((m_idx <= 0) && AngbandWorld::get_instance().wizard) {
         if (input_check("Force to go up? ")) {
             go_up = true;

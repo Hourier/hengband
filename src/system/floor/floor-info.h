@@ -94,6 +94,7 @@ public:
     bool is_leaving_dungeon() const;
     bool is_underground() const;
     bool is_in_quest() const;
+    bool is_in_blocking_quest() const;
     void set_dungeon_index(DungeonId id);
     void reset_dungeon_index();
     const DungeonDefinition &get_dungeon_definition() const; //!< @details 定義データなので非const 版の使用は禁止.

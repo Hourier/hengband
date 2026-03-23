@@ -116,6 +116,11 @@ bool FloorType::is_in_quest() const
     return this->quest_number != QuestId::NONE;
 }
 
+bool FloorType::is_in_blocking_quest() const
+{
+    return QuestList::get_instance().is_blocking_quest(this->get_quest_id());
+}
+
 void FloorType::set_dungeon_index(DungeonId id)
 {
     this->dungeon_id = id;

@@ -130,6 +130,16 @@ std::vector<QuestId> QuestList::get_sorted_quest_ids() const
     return quest_ids;
 }
 
+bool QuestList::is_blocking_quest(QuestId id) const
+{
+    return std::find_if(this->quests.begin(), this->quests.end(), [id](const auto &kvp) {
+        const auto &[quest_id, quest] = kvp;
+        const auto is_quest_taken = quest.status == QuestStatusType::TAKEN;
+        const auto is_blocking = (quest.type == QuestKindType::RANDOM) || (id == QuestId::OBERON) || (id == QuestId::SERPENT);
+        return is_quest_taken && is_blocking;
+    }) != this->quests.end();
+}
+
 bool QuestList::order_completed(QuestId id1, QuestId id2) const
 {
     const auto &quest1 = this->get_quest(id1);
