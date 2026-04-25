@@ -36,7 +36,7 @@ char index_to_label(int i)
  * @param o_ptr 名称を取得する元のオブジェクト構造体参照ポインタ
  * @return 対応する装備部位ID
  */
-int16_t wield_slot(PlayerType *player_ptr, const ItemEntity *o_ptr)
+short wield_slot(PlayerType *player_ptr, const ItemEntity *o_ptr)
 {
     switch (o_ptr->bi_key.tval()) {
     case ItemKindType::DIGGING:
@@ -123,8 +123,15 @@ bool check_book_realm(PlayerType *player_ptr, const BaseitemKey &bi_key)
     return pr.realm1().equals(book_realm) || pr.realm2().equals(book_realm);
 }
 
-ItemEntity *ref_item(PlayerType *player_ptr, INVENTORY_IDX i_idx)
+/*!
+ * @brief 所持品IDからアイテムを返す
+ * @param player_ptr プレイヤーへの参照ポインタ
+ * @param i_idx 所持品ID
+ * @return 対応するアイテムへの参照ポインタ
+ * @details 返り値を生ポインタまたは参照として受け取るとダングリングポインタになるので注意
+ */
+std::shared_ptr<ItemEntity> ref_item(PlayerType *player_ptr, short i_idx)
 {
     auto &floor = *player_ptr->current_floor_ptr;
-    return i_idx >= 0 ? player_ptr->inventory[i_idx].get() : floor.o_list[0 - i_idx].get();
+    return i_idx >= 0 ? player_ptr->inventory[i_idx] : floor.o_list[0 - i_idx];
 }
