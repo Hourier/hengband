@@ -56,13 +56,12 @@ T get_rumor_num(std::string_view zz, U max_idx)
 tl::optional<std::vector<std::string>> get_rumor_tokens(std::string rumor)
 {
     constexpr auto num_tokens = 3;
-    char *tmp_tokens[num_tokens];
-    if (tokenize(rumor.data() + 2, num_tokens, tmp_tokens, TOKENIZE_CHECKQUOTE) != num_tokens) {
+    const auto tokens = tokenize(rumor.data() + 2, num_tokens, true);
+    if (tokens.size() != num_tokens) {
         msg_print(_("この情報は間違っている。", "This information is wrong."));
         return tl::nullopt;
     }
 
-    std::vector<std::string> tokens(std::begin(tmp_tokens), std::end(tmp_tokens));
     return tokens;
 }
 }
