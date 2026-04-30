@@ -18,46 +18,42 @@
  * Hack -- We will always extract at least one token
  * </pre>
  */
-int16_t tokenize(char *buf, int16_t num, char **tokens, BIT_FLAGS mode)
+std::vector<std::string> tokenize(std::string_view buf, size_t num, bool should_check_quote)
 {
-    int16_t i = 0;
-    char *s = buf;
-    while (i < num - 1) {
-        char *t;
-        for (t = s; *t; t++) {
-            if ((*t == ':') || (*t == '/')) {
+    std::vector<std::string> tokens;
+    if (num == 0) {
+        return tokens;
+    }
+
+    tokens.reserve(num);
+    auto remaining = buf;
+    while ((tokens.size() < num - 1) && !remaining.empty()) {
+        size_t token_end = 0;
+        auto in_quote = false;
+        for (; token_end < remaining.length(); token_end++) {
+            const auto c = remaining.at(token_end);
+            if (!in_quote && (c == ':' || c == '/')) {
                 break;
             }
 
-            if ((mode & TOKENIZE_CHECKQUOTE) && (*t == '\'')) {
-                t++;
-                if (*t == '\\') {
-                    t++;
-                }
-                if (!*t) {
-                    break;
-                }
-
-                t++;
-                if (*t != '\'') {
-                    *t = '\'';
-                }
+            if (should_check_quote && c == '\'') {
+                in_quote = !in_quote;
+                continue;
             }
 
-            if (*t == '\\') {
-                t++;
+            if (c == '\\' && token_end + 1 < remaining.length()) {
+                token_end++;
             }
         }
 
-        if (!*t) {
-            break;
+        tokens.emplace_back(remaining.substr(0, token_end));
+        if (token_end >= remaining.length()) {
+            return tokens;
         }
 
-        *t++ = '\0';
-        tokens[i++] = s;
-        s = t;
+        remaining = remaining.substr(token_end + 1);
     }
 
-    tokens[i++] = s;
-    return i;
+    tokens.emplace_back(remaining);
+    return tokens;
 }
