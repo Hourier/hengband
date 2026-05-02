@@ -4,7 +4,6 @@
 #include "info-reader/feature-info-tokens-table.h"
 #include "info-reader/info-reader-util.h"
 #include "info-reader/parse-error-types.h"
-#include "main/angband-headers.h"
 #include "room/door-definition.h"
 #include "system/terrain/terrain-definition.h"
 #include "system/terrain/terrain-list.h"
@@ -57,7 +56,7 @@ static bool grab_one_feat_action(TerrainType *f_ptr, std::string_view what, int 
  * @param head ヘッダ構造体
  * @return エラーコード
  */
-errr parse_terrains_info(std::string_view buf, angband_header *)
+int parse_terrains_info(std::string_view buf, DefinitionHashDataType)
 {
     const auto &tokens = str_split(buf, ':', false, 10);
     auto &terrains = TerrainList::get_instance();
