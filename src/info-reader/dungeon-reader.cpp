@@ -6,7 +6,6 @@
 #include "info-reader/parse-error-types.h"
 #include "info-reader/race-info-tokens-table.h"
 #include "io/tokenizer.h"
-#include "main/angband-headers.h"
 #include "system/dungeon/dungeon-definition.h"
 #include "system/dungeon/dungeon-list.h"
 #include "system/enums/dungeon/dungeon-id.h"
@@ -338,7 +337,7 @@ static errr set_dungeon_monster_spells(const nlohmann::json &spells_obj, Dungeon
     return PARSE_ERROR_NONE;
 }
 
-errr parse_dungeons_info(nlohmann::json &element, angband_header *)
+int parse_dungeons_info(nlohmann::json &element, DefinitionHashDataType)
 {
     if (element.is_null() || !element.is_object()) {
         return PARSE_ERROR_TOO_FEW_ARGUMENTS;

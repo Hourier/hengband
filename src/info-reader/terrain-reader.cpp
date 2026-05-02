@@ -87,7 +87,7 @@ static errr set_terrain_symbol(const nlohmann::json &symbol_obj, TerrainType &te
     return PARSE_ERROR_NONE;
 }
 
-errr parse_terrains_json_info(nlohmann::json &element, angband_header *)
+int parse_terrains_json_info(nlohmann::json &element, DefinitionHashDataType)
 {
     if (element.is_null() || !element.is_object()) {
         return PARSE_ERROR_TOO_FEW_ARGUMENTS;
