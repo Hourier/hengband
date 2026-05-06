@@ -309,6 +309,8 @@
     <ClCompile Include="..\..\src\core\score-util.cpp" />
     <ClCompile Include="..\..\src\external-lib\fmt\format.cc" />
     <ClCompile Include="..\..\src\info-reader\definition-hash-data.cpp" />
+    <ClCompile Include="..\..\src\rumor\rumor-definition.cpp" />
+    <ClCompile Include="..\..\src\rumor\rumor-list.cpp" />
     <ClCompile Include="..\..\src\io\macro-configurations-store.cpp" />
     <ClCompile Include="..\..\src\io\temp-file.cpp" />
     <ClCompile Include="..\..\src\load\artifact-record-loader.cpp" />
@@ -321,6 +323,7 @@
     <ClCompile Include="..\..\src\system\dungeon\quest-definition.cpp" />
     <ClCompile Include="..\..\src\system\dungeon\quest-list.cpp" />
     <ClCompile Include="..\..\src\system\floor\town-records.cpp" />
+    <ClCompile Include="..\..\src\rumor\rumor-service.cpp" />
     <ClCompile Include="..\..\src\system\floor\wilderness-grid.cpp" />
     <ClCompile Include="..\..\src\system\monrace\monrace-record.cpp" />
     <ClCompile Include="..\..\src\system\monrace\monrace-records.cpp" />
@@ -1046,6 +1049,8 @@
     <ClInclude Include="..\..\src\action\open-util.h" />
     <ClInclude Include="..\..\src\action\run-execution.h" />
     <ClInclude Include="..\..\src\external-lib\include-json.h" />
+    <ClInclude Include="..\..\src\rumor\rumor-definition.h" />
+    <ClInclude Include="..\..\src\rumor\rumor-list.h" />
     <ClInclude Include="..\..\src\io\macro-configurations-store.h" />
     <ClInclude Include="..\..\src\io\temp-file.h" />
     <ClInclude Include="..\..\src\load\artifact-record-loader.h" />
@@ -1059,6 +1064,7 @@
     <ClInclude Include="..\..\src\system\artifact\artifact-list.h" />
     <ClInclude Include="..\..\src\system\artifact\artifact-record.h" />
     <ClInclude Include="..\..\src\system\artifact\artifact-service.h" />
+    <ClInclude Include="..\..\src\rumor\rumor-service.h" />
     <ClInclude Include="..\..\src\system\enums\terrain\terrain-kind.h" />
     <ClInclude Include="..\..\src\system\enums\terrain\terrain-conversion-type.h" />
     <ClInclude Include="..\..\src\system\enums\terrain\trap.h" />

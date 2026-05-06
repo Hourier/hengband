@@ -15,7 +15,7 @@
 #include <vector>
 
 enum class MonraceId : short;
-
+class LocalizedString;
 class MonraceDefinition;
 class MonraceList : public util::AbstractMapWrapper<MonraceId, std::shared_ptr<MonraceDefinition>> {
 public:
@@ -53,6 +53,8 @@ public:
     const MonraceDefinition &pick_monrace_at_random() const;
     int calc_defeat_count() const;
     MonraceId select_figurine(int max_level) const;
+    const std::vector<LocalizedString> &get_normal_monster_names() const; //!< @todo MonraceDefinitionをshared_ptrにする.
+    const std::vector<LocalizedString> &get_unique_monster_names() const; //!< @todo MonraceDefinitionをshared_ptrにする.
 
     void reset_current_numbers();
     void reset_all_visuals();
