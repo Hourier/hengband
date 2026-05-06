@@ -33,6 +33,7 @@
 #include "time.h"
 #include "util/angband-files.h"
 #include "world/world.h"
+#include <string_view>
 
 /*!
  * @brief 各データファイルを読み取るためのパスを取得する.
@@ -63,7 +64,7 @@ void init_file_paths(const std::filesystem::path &libpath)
  * @brief 画面左下にシステムメッセージを表示する / Take notes on line 23
  * @param str 初期化中のコンテンツ文字列
  */
-static void init_note_term(concptr str)
+static void init_note_term(std::string_view str)
 {
     term_erase(0, 23);
     term_putstr(20, 23, -1, TERM_WHITE, str);
@@ -74,7 +75,7 @@ static void init_note_term(concptr str)
  * @brief ゲーム画面無しの時の初期化メッセージ出力
  * @param str 初期化中のコンテンツ文字列
  */
-static void init_note_no_term(concptr str)
+static void init_note_no_term(std::string_view str)
 {
     /* Don't show initialization message when there is no game terminal. */
     (void)str;
@@ -168,7 +169,7 @@ void init_angband(PlayerType *player_ptr, bool no_term)
         put_title();
     }
 
-    void (*init_note)(concptr) = (no_term ? init_note_no_term : init_note_term);
+    void (*init_note)(std::string_view) = (no_term ? init_note_no_term : init_note_term);
 
     init_note(_("[データの初期化中... (地形)]", "[Initializing arrays... (features)]"));
     try {
