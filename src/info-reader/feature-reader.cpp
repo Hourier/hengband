@@ -56,7 +56,7 @@ static bool grab_one_feat_action(TerrainType *f_ptr, std::string_view what, int 
  * @param head ヘッダ構造体
  * @return エラーコード
  */
-int parse_terrains_info(std::string_view buf, DefinitionHashDataType)
+int parse_terrains_info(std::string_view buf)
 {
     const auto &tokens = str_split(buf, ':', false, 10);
     auto &terrains = TerrainList::get_instance();

@@ -2,6 +2,5 @@
 
 #include <string_view>
 
-enum class DefinitionHashDataType;
-int parse_terrains_info(std::string_view buf, DefinitionHashDataType);
+int parse_terrains_info(std::string_view buf);
 void init_feat_variables();
