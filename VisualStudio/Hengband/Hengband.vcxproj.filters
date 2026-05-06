@@ -2565,6 +2565,9 @@
     <ClCompile Include="..\..\src\io\macro-configurations-store.cpp">
       <Filter>io</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\system\floor\town-records.cpp">
+      <Filter>system\floor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\combat\shoot.h">
@@ -5561,6 +5564,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\io\macro-configurations-store.h">
       <Filter>io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\system\floor\town-records.h">
+      <Filter>system\floor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
