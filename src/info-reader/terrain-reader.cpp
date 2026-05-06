@@ -87,18 +87,23 @@ static errr set_terrain_symbol(const nlohmann::json &symbol_obj, TerrainType &te
     return PARSE_ERROR_NONE;
 }
 
-int parse_terrains_json_info(nlohmann::json &element, DefinitionHashDataType)
+/*!
+ * @brief 地形定義(TerrainDefinitions)のパース関数
+ * @param terrain_data 地形情報の格納されたJSON Object
+ * @return エラーコード
+ */
+int parse_terrains_json_info(nlohmann::json &terrain_data)
 {
-    if (element.is_null() || !element.is_object()) {
+    if (terrain_data.is_null() || !terrain_data.is_object()) {
         return PARSE_ERROR_TOO_FEW_ARGUMENTS;
     }
 
     int id = 0;
-    if (auto err = info_set_integer(element["id"], id, true, Range(0, 9999))) {
+    if (auto err = info_set_integer(terrain_data["id"], id, true, Range(0, 9999))) {
         return err;
     }
 
-    const auto &key_obj = element["key"];
+    const auto &key_obj = terrain_data["key"];
     if (!key_obj.is_string()) {
         return PARSE_ERROR_TOO_FEW_ARGUMENTS;
     }
@@ -132,15 +137,15 @@ int parse_terrains_json_info(nlohmann::json &element, DefinitionHashDataType)
         terrain.state[j].result_tag.clear();
     }
 
-    if (auto err = info_set_string(element["name"], terrain.name, true)) {
+    if (auto err = info_set_string(terrain_data["name"], terrain.name, true)) {
         return err;
     }
 
-    if (auto err = set_terrain_symbol(element["symbol"], terrain)) {
+    if (auto err = set_terrain_symbol(terrain_data["symbol"], terrain)) {
         return err;
     }
 
-    const auto &mimic_obj = element["mimic"];
+    const auto &mimic_obj = terrain_data["mimic"];
     if (!mimic_obj.is_null()) {
         if (!mimic_obj.is_string()) {
             return PARSE_ERROR_TOO_FEW_ARGUMENTS;
@@ -148,14 +153,14 @@ int parse_terrains_json_info(nlohmann::json &element, DefinitionHashDataType)
         terrain.mimic_tag = mimic_obj.get<std::string>();
     }
 
-    const auto &prio_obj = element["map_priority"];
+    const auto &prio_obj = terrain_data["map_priority"];
     if (!prio_obj.is_null()) {
         if (auto err = info_set_integer(prio_obj, terrain.priority, true, Range(-9999, 9999))) {
             return err;
         }
     }
 
-    const auto &flags_obj = element["flags"];
+    const auto &flags_obj = terrain_data["flags"];
     if (flags_obj.is_null() || !flags_obj.is_array()) {
         return PARSE_ERROR_TOO_FEW_ARGUMENTS;
     }
@@ -184,7 +189,7 @@ int parse_terrains_json_info(nlohmann::json &element, DefinitionHashDataType)
         }
     }
 
-    const auto &inter_obj = element["interactions"];
+    const auto &inter_obj = terrain_data["interactions"];
     if (!inter_obj.is_null()) {
         if (!inter_obj.is_object()) {
             return PARSE_ERROR_TOO_FEW_ARGUMENTS;
