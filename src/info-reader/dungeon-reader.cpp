@@ -359,7 +359,12 @@ static errr set_dungeon_monsters(const nlohmann::json &monsters_obj, DungeonDefi
     return PARSE_ERROR_NONE;
 }
 
-int parse_dungeons_info(nlohmann::json &element, DefinitionHashDataType)
+/*!
+ * @brief ダンジョン定義(DungeonDefinitions)のパース関数
+ * @param element ダンジョン定義の格納されたJSON Object
+ * @return エラーコード
+ */
+int parse_dungeons_info(nlohmann::json &element)
 {
     if (element.is_null() || !element.is_object()) {
         return PARSE_ERROR_TOO_FEW_ARGUMENTS;
