@@ -46,6 +46,7 @@ public:
 
     bool can_generate(const BaseitemKey &bi_key) const;
     tl::optional<BaseitemKey> try_make_instant_artifact(int making_level) const;
+    std::string get_full_name() const;
 
 private:
     bool can_make_instant_artifact() const;

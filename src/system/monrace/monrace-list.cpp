@@ -484,6 +484,38 @@ MonraceId MonraceList::select_figurine(int max_level) const
     }
 }
 
+const std::vector<LocalizedString> &MonraceList::get_normal_monster_names() const
+{
+    static std::vector<LocalizedString> normal_monster_names;
+    if (!normal_monster_names.empty()) {
+        return normal_monster_names;
+    }
+
+    for (const auto &[_, monrace] : this->monraces) {
+        if (monrace.is_valid() && monrace.kind_flags.has_not(MonsterKindType::UNIQUE)) {
+            normal_monster_names.push_back(monrace.name);
+        }
+    }
+
+    return normal_monster_names;
+}
+
+const std::vector<LocalizedString> &MonraceList::get_unique_monster_names() const
+{
+    static std::vector<LocalizedString> unique_monster_names;
+    if (!unique_monster_names.empty()) {
+        return unique_monster_names;
+    }
+
+    for (const auto &[_, monrace] : this->monraces) {
+        if (monrace.kind_flags.has(MonsterKindType::UNIQUE)) {
+            unique_monster_names.push_back(monrace.name);
+        }
+    }
+
+    return unique_monster_names;
+}
+
 /*!
  * @brief 現在フロアに存在している1種別辺りのモンスター数を全てリセットする
  * @todo そもそもcur_num はMonsterRaceInfo にいるべきではない、後で分離する

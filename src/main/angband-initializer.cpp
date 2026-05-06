@@ -22,6 +22,7 @@
 #include "main/game-data-initializer.h"
 #include "main/info-initializer.h"
 #include "market/building-initializer.h"
+#include "rumor/rumor-service.h"
 #include "system/angband-system.h"
 #include "system/dungeon/dungeon-definition.h"
 #include "system/monrace/monrace-definition.h"
@@ -224,6 +225,10 @@ void init_angband(PlayerType *player_ptr, bool no_term)
 
     init_note(_("[データの初期化中... (宝物庫)]", "[Initializing arrays... (vaults)]"));
     init_vaults_info();
+
+    init_note(_("[データの初期化中... (噂)]", "[Initializing arrays... (rumors)]"));
+    RumorService::initialize();
+    RumorService::retouch();
 
     init_note(_("[データの初期化中... (その他)]", "[Initializing arrays... (other)]"));
     init_other(player_ptr);
