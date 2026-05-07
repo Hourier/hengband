@@ -80,7 +80,7 @@ public:
     bool is_valid() const;
     MonraceId get_real_monrace_id() const;
     MonraceDefinition &get_real_monrace() const;
-    MonraceDefinition &get_appearance_monrace() const;
+    MonraceDefinition &get_apparent_monrace() const;
     MonraceDefinition &get_monrace() const;
     std::shared_ptr<MonraceDefinition> get_monrace_shared();
     const std::shared_ptr<const MonraceDefinition> get_monrace_shared() const;
