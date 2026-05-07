@@ -147,7 +147,7 @@ MULTIPLY mult_brand(PlayerType *player_ptr, MULTIPLY mult, const TrFlags &flags,
  * Note that most brands and slays are x3, except Slay Animal (x2),\n
  * Slay Evil (x2), and Kill dragon (x5).\n
  */
-int calc_attack_damage_with_slay(PlayerType *player_ptr, ItemEntity *o_ptr, int tdam, const MonsterEntity &monster, combat_options mode, bool thrown)
+int calc_attack_damage_with_slay(PlayerType *player_ptr, ItemEntity *o_ptr, int tdam, MonsterEntity &monster, combat_options mode, bool thrown)
 {
     auto flags = o_ptr->get_flags();
     torch_flags(o_ptr, flags); /* torches has secret flags */

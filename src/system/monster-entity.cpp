@@ -188,6 +188,16 @@ MonraceDefinition &MonsterEntity::get_monrace() const
     return MonraceList::get_instance().get_monrace(this->r_idx);
 }
 
+std::shared_ptr<MonraceDefinition> MonsterEntity::get_monrace_shared()
+{
+    return MonraceList::get_instance().get_monrace_shared(this->r_idx);
+}
+
+const std::shared_ptr<const MonraceDefinition> MonsterEntity::get_monrace_shared() const
+{
+    return MonraceList::get_instance().get_monrace_shared(this->r_idx);
+}
+
 short MonsterEntity::get_remaining_sleep() const
 {
     return this->mtimed.at(MonsterTimedEffect::SLEEP);

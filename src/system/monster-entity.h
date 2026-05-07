@@ -8,6 +8,7 @@
 #include "util/flag-group.h"
 #include "util/point-2d.h"
 #include <map>
+#include <memory>
 #include <string>
 
 /*!
@@ -81,6 +82,8 @@ public:
     MonraceDefinition &get_real_monrace() const;
     MonraceDefinition &get_appearance_monrace() const;
     MonraceDefinition &get_monrace() const;
+    std::shared_ptr<MonraceDefinition> get_monrace_shared();
+    const std::shared_ptr<const MonraceDefinition> get_monrace_shared() const;
     short get_remaining_sleep() const;
     short get_remaining_acceleration() const;
     short get_remaining_deceleration() const;
