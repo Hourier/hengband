@@ -98,7 +98,7 @@ void RumorList::read_rumors(const std::filesystem::path &path)
             continue;
         }
 
-        this->rumor_definitions.at(RumorRarity::LOW).at(RumorType::GOSSIP).emplace_back(line);
+        this->rumor_definitions.at(RumorRarity::LOW).at(RumorType::GOSSIP).emplace_back(RumorType::GOSSIP, 0, line);
     }
 }
 
@@ -109,7 +109,7 @@ void RumorList::add_towns()
     for (auto i = 0; i < std::ssize(towns); ++i) {
         if (i != SECRET_TOWN) {
             const auto town_name = str_replace(this->type_template.at(RumorType::TOWN), name_template, towns.get_town(i).get_name());
-            rumors.push_back(town_name);
+            rumors.emplace_back(RumorType::TOWN, i + 1, town_name);
         }
     }
 }
@@ -117,10 +117,10 @@ void RumorList::add_towns()
 void RumorList::add_shallow_dungeons()
 {
     auto &rumors = this->rumor_definitions.at(RumorRarity::MEDIUM).at(RumorType::SHALLOW_DUNGEON);
-    for (const auto &[_, dungeon] : DungeonList::get_instance()) {
+    for (const auto &[id, dungeon] : DungeonList::get_instance()) {
         if (0 < dungeon->mindepth && dungeon->mindepth <= depth_threshold) {
             const auto dungeon_name = str_replace(this->type_template.at(RumorType::SHALLOW_DUNGEON), name_template, dungeon->name);
-            rumors.push_back(dungeon_name);
+            rumors.emplace_back(RumorType::SHALLOW_DUNGEON, enum2i(id), dungeon_name);
         }
     }
 }
@@ -128,9 +128,9 @@ void RumorList::add_shallow_dungeons()
 void RumorList::add_normal_monsters()
 {
     auto &rumors = this->rumor_definitions.at(RumorRarity::MEDIUM).at(RumorType::NORMAL_MONSTER);
-    for (const auto &name : MonraceList::get_instance().get_normal_monster_names()) {
+    for (const auto &[id, name] : MonraceList::get_instance().get_normal_monster_names()) {
         const auto monster_name = str_replace(this->type_template.at(RumorType::NORMAL_MONSTER), name_template, name.string());
-        rumors.push_back(monster_name);
+        rumors.emplace_back(RumorType::NORMAL_MONSTER, enum2i(id), monster_name);
     }
 }
 
@@ -147,7 +147,7 @@ void RumorList::add_shallow_artifacts()
 
         if (artifact.level <= depth_threshold) {
             const auto artifact_name = str_replace(this->type_template.at(RumorType::SHALLOW_ARTIFACT), name_template, artifact.get_full_name());
-            rumors.push_back(artifact_name);
+            rumors.emplace_back(RumorType::SHALLOW_ARTIFACT, enum2i(id), artifact_name);
         }
     }
 }
@@ -155,10 +155,10 @@ void RumorList::add_shallow_artifacts()
 void RumorList::add_deep_dungeons()
 {
     auto &rumors = this->rumor_definitions.at(RumorRarity::HIGH).at(RumorType::DEEP_DUNGEON);
-    for (const auto &[_, dungeon] : DungeonList::get_instance()) {
+    for (const auto &[id, dungeon] : DungeonList::get_instance()) {
         if (dungeon->mindepth > depth_threshold) {
             const auto dungeon_name = str_replace(this->type_template.at(RumorType::DEEP_DUNGEON), name_template, dungeon->name);
-            rumors.push_back(dungeon_name);
+            rumors.emplace_back(RumorType::DEEP_DUNGEON, enum2i(id), dungeon_name);
         }
     }
 }
@@ -166,9 +166,9 @@ void RumorList::add_deep_dungeons()
 void RumorList::add_unique_monsters()
 {
     auto &rumors = this->rumor_definitions.at(RumorRarity::HIGH).at(RumorType::UNIQUE_MONSTER);
-    for (const auto &name : MonraceList::get_instance().get_unique_monster_names()) {
+    for (const auto &[id, name] : MonraceList::get_instance().get_unique_monster_names()) {
         const auto monster_name = str_replace(this->type_template.at(RumorType::UNIQUE_MONSTER), name_template, name.string());
-        rumors.push_back(monster_name);
+        rumors.emplace_back(RumorType::UNIQUE_MONSTER, enum2i(id), monster_name);
     }
 }
 
@@ -181,7 +181,7 @@ void RumorList::add_deep_artifacts()
     for (const auto &[id, artifact] : ArtifactList::get_instance()) {
         if (artifact.level > depth_threshold) {
             const auto artifact_name = str_replace(this->type_template.at(RumorType::DEEP_ARTIFACT), name_template, artifact.get_full_name());
-            rumors.push_back(artifact_name);
+            rumors.emplace_back(RumorType::DEEP_ARTIFACT, enum2i(id), artifact_name);
         }
     }
 }

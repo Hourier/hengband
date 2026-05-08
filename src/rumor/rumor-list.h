@@ -1,5 +1,6 @@
 #pragma once
 
+#include "rumor/rumor-definition.h"
 #include "util/enum-range.h"
 #include "util/probability-table.h"
 #include <filesystem>
@@ -13,18 +14,6 @@ enum class RumorRarity {
     LOW = 3,
     MEDIUM = 2,
     HIGH = 1,
-    MAX,
-};
-
-enum class RumorType {
-    GOSSIP = 0,
-    TOWN = 1,
-    SHALLOW_DUNGEON = 2,
-    NORMAL_MONSTER = 3,
-    SHALLOW_ARTIFACT = 4,
-    DEEP_DUNGEON = 5,
-    UNIQUE_MONSTER = 6,
-    DEEP_ARTIFACT = 7,
     MAX,
 };
 

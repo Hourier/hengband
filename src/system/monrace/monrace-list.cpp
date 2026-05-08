@@ -422,32 +422,32 @@ MonraceId MonraceList::select_figurine(int max_level) const
     }
 }
 
-const std::vector<LocalizedString> &MonraceList::get_normal_monster_names() const
+const std::vector<std::pair<MonraceId, LocalizedString>> &MonraceList::get_normal_monster_names() const
 {
-    static std::vector<LocalizedString> normal_monster_names;
+    static std::vector<std::pair<MonraceId, LocalizedString>> normal_monster_names;
     if (!normal_monster_names.empty()) {
         return normal_monster_names;
     }
 
-    for (const auto &[_, monrace] : this->monraces) {
+    for (const auto &[id, monrace] : this->monraces) {
         if (monrace->is_valid() && monrace->kind_flags.has_not(MonsterKindType::UNIQUE)) {
-            normal_monster_names.push_back(monrace->name);
+            normal_monster_names.emplace_back(id, monrace->name);
         }
     }
 
     return normal_monster_names;
 }
 
-const std::vector<LocalizedString> &MonraceList::get_unique_monster_names() const
+const std::vector<std::pair<MonraceId, LocalizedString>> &MonraceList::get_unique_monster_names() const
 {
-    static std::vector<LocalizedString> unique_monster_names;
+    static std::vector<std::pair<MonraceId, LocalizedString>> unique_monster_names;
     if (!unique_monster_names.empty()) {
         return unique_monster_names;
     }
 
-    for (const auto &[_, monrace] : this->monraces) {
+    for (const auto &[id, monrace] : this->monraces) {
         if (monrace->kind_flags.has(MonsterKindType::UNIQUE)) {
-            unique_monster_names.push_back(monrace->name);
+            unique_monster_names.emplace_back(id, monrace->name);
         }
     }
 
