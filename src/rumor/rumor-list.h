@@ -26,8 +26,8 @@ public:
     RumorList &operator=(RumorList &&) = delete;
 
     static RumorList &get_instance();
-    const std::string &get_random_rumor() const;
-    const std::string &get_rumor(RumorRarity rt) const;
+    const RumorDefinition &get_random_rumor() const;
+    const RumorDefinition &get_rumor(RumorRarity rt) const;
 
     void read_rumors(const std::filesystem::path &path);
 
@@ -49,5 +49,5 @@ private:
     std::map<RumorRarity, std::map<RumorType, std::vector<RumorDefinition>>> rumor_definitions;
     std::map<RumorType, std::string_view> type_template;
     ProbabilityTable<int> rumor_tables;
-    std::vector<std::string> random_rumors;
+    std::vector<RumorDefinition> random_rumors;
 };

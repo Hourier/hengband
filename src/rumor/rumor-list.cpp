@@ -69,19 +69,19 @@ RumorList &RumorList::get_instance()
     return instance;
 }
 
-const std::string &RumorList::get_random_rumor() const
+const RumorDefinition &RumorList::get_random_rumor() const
 {
     std::vector<int> selected_rumors;
     this->rumor_tables.lottery(std::back_inserter(selected_rumors), this->rumor_tables, 1);
     return this->random_rumors.at(selected_rumors.front());
 }
 
-const std::string &RumorList::get_rumor(RumorRarity rt) const
+const RumorDefinition &RumorList::get_rumor(RumorRarity rt) const
 {
     const auto &rumors_map = this->rumor_definitions.at(rt);
     const auto type = select_rumor_type(rt);
     const auto &rumors = rumors_map.at(type);
-    return rumors.at(randint0(rumors.size())).get_description();
+    return rumors.at(randint0(rumors.size()));
 }
 
 void RumorList::read_rumors(const std::filesystem::path &path)
@@ -193,7 +193,7 @@ void RumorList::make_table()
         for (const auto &[type, rumors] : rumors_map) {
             for (const auto &rumor : rumors) {
                 this->rumor_tables.entry_item(i, enum2i(rarity));
-                this->random_rumors.push_back(rumor.get_description());
+                this->random_rumors.push_back(rumor);
                 i++;
             }
         }

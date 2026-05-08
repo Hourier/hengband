@@ -4,6 +4,8 @@
 #include "io/files-util.h"
 #include "io/tokenizer.h"
 #include "locale/language-switcher.h"
+#include "rumor/rumor-definition.h"
+#include "rumor/rumor-list.h"
 #include "system/angband-exceptions.h"
 #include "system/artifact/artifact-definition.h"
 #include "system/artifact/artifact-list.h"
@@ -17,6 +19,7 @@
 #include "system/floor/town-records.h"
 #include "system/monrace/monrace-definition.h"
 #include "system/monrace/monrace-list.h"
+#include "system/monrace/monrace-record.h"
 #include "system/monrace/monrace-records.h"
 #include "system/player-type-definition.h"
 #include "util/string-processor.h"
@@ -237,4 +240,62 @@ void display_rumor(PlayerType *player_ptr, bool ex)
     }
 
     std::visit(ProcessRumor(player_ptr, *tokens), RumorFactory::create_rumor(*tokens));
+}
+
+void display_random_rumor(tl::optional<RumorRarity> rarity)
+{
+    const auto &rumor_list = RumorList::get_instance();
+    const auto &rumor = rarity ? rumor_list.get_rumor(*rarity) : rumor_list.get_random_rumor();
+    switch (rumor.get_type()) {
+    case RumorType::GOSSIP:
+        msg_erase();
+        msg_print(rumor.get_description());
+        return;
+    case RumorType::TOWN: {
+        const auto town_id = i2enum<TownId>(rumor.get_id());
+        auto &town_records = TownRecords::get_instance();
+        if ((town_id != TownId::ZUL) && !town_records.has_visited(town_id)) {
+            town_records.set_visited(town_id);
+            msg_erase();
+            msg_print(_("{}に行ったことがある気がする。", "You feel you have been to {}."), rumor.get_description());
+        }
+
+        return;
+    }
+    case RumorType::SHALLOW_DUNGEON:
+        [[fallthrough]];
+    case RumorType::DEEP_DUNGEON: {
+        const auto dungeon_id = i2enum<DungeonId>(rumor.get_id());
+        auto &dungeon_record = DungeonRecords::get_instance().get_record(dungeon_id);
+        if (!dungeon_record.has_entered()) {
+            dungeon_record.set_max_level(DungeonList::get_instance().get_dungeon(dungeon_id).mindepth);
+            msg_erase();
+            msg_print(_("{}に帰還できるようになった。", "You can recall to {}."), rumor.get_description());
+        }
+        return;
+    }
+    case RumorType::NORMAL_MONSTER:
+        [[fallthrough]];
+    case RumorType::UNIQUE_MONSTER: {
+        const auto monrace_id = i2enum<MonraceId>(rumor.get_id());
+        auto record = MonraceRecords::get_instance().get_record(monrace_id);
+        msg_erase();
+        msg_print(rumor.get_description());
+        if (record->has_been_seen()) {
+            record->increment_seen_count();
+        }
+
+        return;
+    }
+    case RumorType::SHALLOW_ARTIFACT:
+        [[fallthrough]];
+    case RumorType::DEEP_ARTIFACT: {
+        //!< @todo アーティファクトにr_sightsフラグがない？
+        msg_erase();
+        msg_print(rumor.get_description());
+        return;
+    }
+    default:
+        THROW_EXCEPTION(std::runtime_error, "Unknown rumor type exists in rumor list.");
+    }
 }
