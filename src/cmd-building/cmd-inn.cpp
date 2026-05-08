@@ -13,6 +13,7 @@
 #include "player-info/race-types.h"
 #include "player/digestion-processor.h"
 #include "player/eldritch-horror.h"
+#include "rumor/rumor-list.h"
 #include "status/bad-status-setter.h"
 #include "store/rumor.h"
 #include "system/inner-game-data.h"
@@ -218,7 +219,7 @@ bool inn_comm(PlayerType *player_ptr, int cmd)
     case BACT_REST:
         return stay_inn(player_ptr);
     case BACT_RUMORS:
-        display_rumor(player_ptr, true);
+        display_random_rumor(RumorRarity::MEDIUM);
         return true;
     default:
         //!< @todo リファクタリング前のコードもTRUEだった、FALSEにすべきでは.
