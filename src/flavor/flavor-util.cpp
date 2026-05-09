@@ -6,7 +6,7 @@
 #include "sv-definition/sv-food-types.h"
 #include "system/artifact-type-definition.h"
 #include "system/baseitem/baseitem-definition.h"
-#include "system/item-entity.h"
+#include "system/item/item-entity.h"
 #include "util/string-processor.h"
 #include <sstream>
 

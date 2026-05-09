@@ -20,7 +20,7 @@
 #include "player-base/player-class.h"
 #include "specific-object/bloody-moon.h"
 #include "system/artifact-type-definition.h"
-#include "system/item-entity.h"
+#include "system/item/item-entity.h"
 
 /*!
  * @brief 恐怖の仮面への特殊処理
