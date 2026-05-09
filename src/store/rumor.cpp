@@ -4,7 +4,6 @@
 #include "io/files-util.h"
 #include "io/tokenizer.h"
 #include "locale/language-switcher.h"
-#include "object-enchant/special-object-flags.h"
 #include "system/angband-exceptions.h"
 #include "system/artifact-type-definition.h"
 #include "system/baseitem/baseitem-definition.h"
@@ -160,7 +159,7 @@ public:
     {
         ItemEntity item(artifact_rumor.bi_id);
         item.fa_id = artifact_rumor.fa_id;
-        item.ident = IDENT_STORE;
+        item.set_special_flag(SpecialItemFlag::STORE);
         const auto artifact_name = describe_flavor(player_ptr, item, OD_NAME_ONLY);
         this->print_rumor(artifact_name);
     }

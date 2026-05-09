@@ -13,7 +13,6 @@
 #include "info-reader/fixed-map-parser.h"
 #include "io-dump/dump-util.h"
 #include "locale/english.h"
-#include "object-enchant/special-object-flags.h"
 #include "system/artifact-type-definition.h"
 #include "system/dungeon/dungeon-record.h"
 #include "system/enums/dungeon/dungeon-id.h"
@@ -104,7 +103,7 @@ static void do_cmd_knowledge_quests_current(PlayerType *player_ptr, FILE *fff)
                         const auto &artifact = quest.get_reward();
                         ItemEntity item(artifact.bi_key);
                         item.fa_id = quest.reward_fa_id;
-                        item.ident = IDENT_STORE;
+                        item.set_special_flag(SpecialItemFlag::STORE);
                         item_name = describe_flavor(player_ptr, item, OD_NAME_ONLY);
                     }
 

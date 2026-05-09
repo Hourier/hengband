@@ -13,6 +13,7 @@
 #include "object/object-mark-types.h"
 #include "system/angband.h"
 #include "system/baseitem/baseitem-key.h"
+#include "system/item/special-item-flags.h"
 #include "system/system-variables.h"
 #include "util/dice.h"
 #include "util/flag-group.h"
@@ -73,7 +74,6 @@ public:
 
     Dice damage_dice{}; /*!< Damage dice */
     TIME_EFFECT timeout{}; /*!< Timeout Counter */
-    byte ident{}; /*!< Special flags  */
     EnumClassFlagGroup<OmType> marked{}; /*!< Object is marked */
     tl::optional<std::string> inscription{}; /*!< Inscription */
     tl::optional<std::string> randart_name{}; /*!< Artifact name (random artifacts) */
@@ -183,11 +183,20 @@ public:
     void set_position(const Pos2D &pos);
     bool try_become_artifact(int dungeon_level);
     void absorb(ItemEntity &other);
+    void set_special_flag(SpecialItemFlag flag);
+    void reset_special_flag(SpecialItemFlag flag);
+    void set_special_flags(const EnumClassFlagGroup<SpecialItemFlag> &flags);
+    void reset_special_flags(const EnumClassFlagGroup<SpecialItemFlag> &flags);
+    bool has_special_flag(SpecialItemFlag flag) const;
+    bool has_not_special_flag(SpecialItemFlag flag) const;
+    bool any_special_flag() const;
+    const EnumClassFlagGroup<SpecialItemFlag> &get_special_flags() const; //!< セーブとデバッグ専用.
 
 private:
     ItemEntity(const ItemEntity &) = default;
     ItemEntity &operator=(const ItemEntity &) = default;
 
+    EnumClassFlagGroup<SpecialItemFlag> ident; /*!< Special flags  */
     int get_baseitem_price() const;
     int calc_figurine_value() const;
     int calc_capture_value() const;

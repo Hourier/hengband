@@ -18,7 +18,6 @@
 #include "object-enchant/item-magic-applier.h"
 #include "object-enchant/object-boost.h"
 #include "object-enchant/object-ego.h"
-#include "object-enchant/special-object-flags.h"
 #include "object-enchant/trc-types.h"
 #include "object-enchant/trg-types.h"
 #include "object-hook/hook-armor.h"
@@ -226,7 +225,7 @@ bool curse_armor(PlayerType *player_ptr)
     item.damage_dice = Dice(0, 0);
     item.art_flags.clear();
     item.curse_flags.set(CurseTraitType::CURSED);
-    item.ident |= IDENT_BROKEN;
+    item.set_special_flag(SpecialItemFlag::BROKEN);
     auto &rfu = RedrawingFlagsUpdater::get_instance();
     static constexpr auto flags_srf = {
         StatusRecalculatingFlag::BONUS,
@@ -280,7 +279,7 @@ bool curse_weapon_object(PlayerType *player_ptr, bool force, ItemEntity &item)
     item.damage_dice = Dice(0, 0);
     item.art_flags.clear();
     item.curse_flags.set(CurseTraitType::CURSED);
-    item.ident |= IDENT_BROKEN;
+    item.set_special_flag(SpecialItemFlag::BROKEN);
     auto &rfu = RedrawingFlagsUpdater::get_instance();
     static constexpr auto flags_srf = {
         StatusRecalculatingFlag::BONUS,
@@ -347,7 +346,7 @@ static void break_curse(ItemEntity &item)
 
     msg_print(_("かけられていた呪いが打ち破られた！", "The curse is broken!"));
     item.curse_flags.clear();
-    item.ident |= IDENT_SENSE;
+    item.set_special_flag(SpecialItemFlag::SENSE);
     item.feeling = FEEL_NONE;
 }
 

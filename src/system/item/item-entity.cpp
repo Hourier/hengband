@@ -17,7 +17,6 @@
 #include "object-enchant/dragon-breaths-table.h"
 #include "object-enchant/item-feeling.h"
 #include "object-enchant/object-curse.h"
-#include "object-enchant/special-object-flags.h"
 #include "object/object-value.h"
 #include "object/tval-types.h"
 #include "smith/object-smith.h"
@@ -106,7 +105,7 @@ void ItemEntity::generate(short new_bi_id)
     }
 
     if (this->is_worthless()) {
-        this->ident |= (IDENT_BROKEN);
+        this->ident.set(SpecialItemFlag::BROKEN);
     }
 
     if (baseitem.gen_flags.has(ItemGenerationTraitType::CURSED)) {
@@ -376,7 +375,7 @@ bool ItemEntity::is_valid() const
 
 bool ItemEntity::is_broken() const
 {
-    return any_bits(this->ident, IDENT_BROKEN);
+    return this->ident.has(SpecialItemFlag::BROKEN);
 }
 
 bool ItemEntity::is_cursed() const
@@ -396,12 +395,12 @@ bool ItemEntity::is_held_by_monster() const
 bool ItemEntity::is_known() const
 {
     const auto &baseitem = this->get_baseitem();
-    return any_bits(this->ident, IDENT_KNOWN) || (baseitem.easy_know && baseitem.aware);
+    return this->ident.has(SpecialItemFlag::KNOWN) || (baseitem.easy_know && baseitem.aware);
 }
 
 bool ItemEntity::is_fully_known() const
 {
-    return any_bits(this->ident, IDENT_FULL_KNOWN);
+    return this->ident.has(SpecialItemFlag::FULL_KNOWN);
 }
 
 /*!
@@ -624,7 +623,7 @@ int ItemEntity::calc_price() const
 
         value = object_value_real(this);
     } else {
-        if (any_bits(this->ident, IDENT_SENSE) && is_worthless) {
+        if (this->ident.has(SpecialItemFlag::SENSE) && is_worthless) {
             return 0;
         }
 
@@ -1017,7 +1016,7 @@ int ItemEntity::is_similar_part(const ItemEntity &other) const
     case ItemKindType::SCROLL:
         break;
     case ItemKindType::STAFF:
-        if ((none_bits(this->ident, IDENT_EMPTY) && !this->is_known()) || (none_bits(other.ident, IDENT_EMPTY) && !other.is_known())) {
+        if ((this->ident.has_not(SpecialItemFlag::EMPTY) && !this->is_known()) || (other.ident.has_not(SpecialItemFlag::EMPTY) && !other.is_known())) {
             return 0;
         }
 
@@ -1027,7 +1026,7 @@ int ItemEntity::is_similar_part(const ItemEntity &other) const
 
         break;
     case ItemKindType::WAND:
-        if ((none_bits(this->ident, IDENT_EMPTY) && !this->is_known()) || (none_bits(other.ident, IDENT_EMPTY) && !other.is_known())) {
+        if ((this->ident.has_not(SpecialItemFlag::EMPTY) && !this->is_known()) || (other.ident.has_not(SpecialItemFlag::EMPTY) && !other.is_known())) {
             return 0;
         }
 
@@ -1112,7 +1111,7 @@ int ItemEntity::is_similar_part(const ItemEntity &other) const
         return 0;
     }
 
-    if (any_bits(this->ident, IDENT_BROKEN) != any_bits(other.ident, IDENT_BROKEN)) {
+    if (this->ident.has(SpecialItemFlag::BROKEN) != other.ident.has(SpecialItemFlag::BROKEN)) {
         return 0;
     }
 
@@ -1336,9 +1335,9 @@ std::string ItemEntity::build_activation_description() const
 void ItemEntity::mark_as_known()
 {
     this->feeling = FEEL_NONE;
-    this->ident &= ~(IDENT_SENSE);
-    this->ident &= ~(IDENT_EMPTY);
-    this->ident |= (IDENT_KNOWN);
+    this->ident.reset(SpecialItemFlag::SENSE);
+    this->ident.reset(SpecialItemFlag::EMPTY);
+    this->ident.set(SpecialItemFlag::KNOWN);
 }
 
 /*!
@@ -1401,18 +1400,18 @@ void ItemEntity::absorb(ItemEntity &other)
         this->mark_as_known();
     }
 
-    if (((this->ident & IDENT_STORE) || (other.ident & IDENT_STORE)) && (!((this->ident & IDENT_STORE) && (other.ident & IDENT_STORE)))) {
-        if (other.ident & IDENT_STORE) {
-            other.ident &= 0xEF;
+    if (this->ident.has(SpecialItemFlag::STORE) != other.ident.has(SpecialItemFlag::STORE)) {
+        if (other.ident.has(SpecialItemFlag::STORE)) {
+            other.ident.reset(SpecialItemFlag::STORE);
         }
 
-        if (this->ident & IDENT_STORE) {
-            this->ident &= 0xEF;
+        if (this->ident.has(SpecialItemFlag::STORE)) {
+            this->ident.reset(SpecialItemFlag::STORE);
         }
     }
 
     if (other.is_fully_known()) {
-        this->ident |= (IDENT_FULL_KNOWN);
+        this->ident.set(SpecialItemFlag::FULL_KNOWN);
     }
 
     if (other.is_inscribed()) {
@@ -1437,6 +1436,47 @@ void ItemEntity::absorb(ItemEntity &other)
         this->pval += other.pval * (other.number - diff) / other.number;
     }
 }
+
+void ItemEntity::set_special_flag(SpecialItemFlag flag)
+{
+    this->ident.set(flag);
+}
+
+void ItemEntity::reset_special_flag(SpecialItemFlag flag)
+{
+    this->ident.reset(flag);
+}
+
+void ItemEntity::set_special_flags(const EnumClassFlagGroup<SpecialItemFlag> &flags)
+{
+    this->ident = flags;
+}
+
+void ItemEntity::reset_special_flags(const EnumClassFlagGroup<SpecialItemFlag> &flags)
+{
+    this->ident.reset(flags);
+}
+
+bool ItemEntity::has_special_flag(SpecialItemFlag flag) const
+{
+    return this->ident.has(flag);
+}
+
+bool ItemEntity::has_not_special_flag(SpecialItemFlag flag) const
+{
+    return this->ident.has_not(flag);
+}
+
+bool ItemEntity::any_special_flag() const
+{
+    return this->ident.any();
+}
+
+const EnumClassFlagGroup<SpecialItemFlag> &ItemEntity::get_special_flags() const
+{
+    return this->ident;
+}
+
 /*!
  * @brief エゴ光源のフラグを修正する
  *
