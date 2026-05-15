@@ -1,0 +1,2 @@
+pyjson5==1.6.6
+jsonschema==4.23.0
