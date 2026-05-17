@@ -11,6 +11,7 @@
 #include "autopick/autopick-util.h"
 #include "system/angband.h"
 #include "util/string-processor.h"
+#include <fmt/format.h>
 #include <string>
 #include <vector>
 
