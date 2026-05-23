@@ -15,7 +15,7 @@
  * ブラックマーケットのときは別のメッセージを出す
  * @param store_num 店舗の種類
  */
-void store_owner_says_comment(StoreSaleType store_num)
+void store_owner_says_comment(int price, StoreSaleType store_num)
 {
     if (store_num == StoreSaleType::BLACK) {
         msg_print(rand_choice(comment_1_B));
@@ -23,10 +23,21 @@ void store_owner_says_comment(StoreSaleType store_num)
         msg_print(rand_choice(comment_1));
     }
 
-    if (one_in_(8)) {
-        msg_print(_("店主は耳うちした:", "The shopkeeper whispers something into your ear:"));
-        display_random_rumor(RumorRarity::LOW);
+    if (!one_in_(8)) {
+        return;
     }
+
+    msg_print(_("店主は耳うちした:", "The shopkeeper whispers something into your ear:"));
+    RumorRarity rt;
+    if (price >= 100) {
+        rt = RumorRarity::HIGH;
+    } else if (price >= 10) {
+        rt = RumorRarity::MEDIUM;
+    } else {
+        rt = RumorRarity::LOW;
+    }
+
+    display_random_rumor(rt);
 }
 
 /*!
