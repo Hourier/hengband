@@ -102,7 +102,6 @@ enum class QuestKindType : short {
 enum class DungeonId;
 enum class FixedArtifactId : short;
 enum class MonraceId : short;
-class ArtifactDefinition;
 class BaseitemKey;
 class MonraceDefinition;
 class QuestType {

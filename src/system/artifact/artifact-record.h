@@ -36,7 +36,6 @@ private:
 };
 
 enum class FixedArtifactId : short;
-class ArtifactRecord;
 class ArtifactRecords : public util::AbstractMapWrapper<FixedArtifactId, ArtifactRecord> {
 public:
     ArtifactRecords(ArtifactRecords &&) = delete;
