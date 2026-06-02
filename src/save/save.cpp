@@ -22,6 +22,7 @@
 #include "locale/character-encoding.h"
 #include "monster/monster-compaction.h"
 #include "player/player-status.h"
+#include "save/artifact-record-writer.h"
 #include "save/floor-writer.h"
 #include "save/info-writer.h"
 #include "save/item-writer.h"
@@ -230,6 +231,7 @@ static bool wr_savefile_new(PlayerType *player_ptr)
         wr_s32b(0);
     }
 
+    wr_artifact_records();
     wr_u32b(v_stamp);
     wr_u32b(x_stamp);
     return !ferror(saving_savefile) && (fflush(saving_savefile) != EOF);
