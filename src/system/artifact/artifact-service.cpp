@@ -43,6 +43,32 @@ tl::optional<ItemEntity> ArtifactService::try_make_instant_artifact(int making_l
     return tl::nullopt;
 }
 
+std::vector<FixedArtifactId> ArtifactService::collect_known_fixed_artifacts()
+{
+    std::vector<FixedArtifactId> result;
+    const auto &records = ArtifactRecords::get_instance();
+    for (const auto &[fa_id, record] : records) {
+        if (record.get_known()) {
+            result.push_back(fa_id);
+        }
+    }
+
+    return result;
+}
+
+std::vector<FixedArtifactId> ArtifactService::collect_identified_fixed_artifacts()
+{
+    std::vector<FixedArtifactId> result;
+    const auto &records = ArtifactRecords::get_instance();
+    for (const auto &[fa_id, record] : records) {
+        if (record.get_identified()) {
+            result.push_back(fa_id);
+        }
+    }
+
+    return result;
+}
+
 /*!
  * @brief INSTA_ART型の固定アーティファクト生成を試みる
  * @param 生成基準階層 (現在フロアそのものではなくボーナスつき)
