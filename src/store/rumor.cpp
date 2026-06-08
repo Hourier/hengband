@@ -29,7 +29,7 @@ void display_town_rumor(const RumorDefinition &rumor)
     town_records.set_visited(town_id);
     msg_erase();
     constexpr auto fmt = _("{}への行き方が分かった。", "You know the way to {}.");
-    msg_print(fmt, TownList::get_instance().get_town(rumor.get_id()).get_name());
+    msg_print(fmt, TownList::get_instance().get_town(town_id).get_name());
 }
 
 void display_dungeon_rumor(const RumorDefinition &rumor)
