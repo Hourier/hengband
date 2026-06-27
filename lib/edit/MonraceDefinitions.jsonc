@@ -28009,7 +28009,7 @@
       "blows": [
         {
           "method": "CLAW",
-          "effect": "LOSE_STR",
+          "effect": "LOSE_INT",
           "damage_dice": "4d4",
         },
         {
@@ -28019,7 +28019,7 @@
         },
         {
           "method": "CLAW",
-          "effect": "LOSE_STR",
+          "effect": "LOSE_WIS",
           "damage_dice": "4d4",
         },
         {
@@ -28042,6 +28042,10 @@
         "NO_FEAR",
         "NO_STUN",
       ],
+      "skill": {
+        "probability": "1_IN_6",
+        "list": ["MIND_BLAST", "BRAIN_SMASH"],
+      },
       "flavor": {
         "ja": "通常目に見ることができない、宇宙から来た吸血怪物。時々、びっくりするようなゲタゲタ笑いや、グロテスクなクスクス笑いの声を立てる。人間の血を吸うと、一時的に姿が見えるようになる。「全身が赤くそまり、脈を打って蠢く巨大なゼリーであって、深紅の塊にはおびただしい触角が備わり、それがうちふるえているのだった。触角の先端には吸盤があり、食屍鬼めいた欲望をみなぎらせて開閉している……。そいつはふくれあがった鼻もちならないもので、頭も顔も目もない塊でありながらも、異界の星に生まれた魔物の貪欲な口と巨大な鉤爪を備えていた」(ロバート・ブロック、大瀧啓裕訳「星から訪れたもの」『クトゥルー７』、青心社文庫、p.23)",
         "en": "\"It was red and dripping; an immensity of pulsing, moving jelly; a scarlet blob with myriad tentacular trunks that waved and waved.  There were suckers on the tips of the appendages, and these were opening and closing with ghoulish lust...  The thing was bloated and obscene; a headless, faceless, eyeless bulk, with the ravenous maw and titanic talons of a star-born monster.\"",
