@@ -2,6 +2,11 @@
 
 #include <vector>
 
+enum class BaseitemCollectionMode {
+    CHECK_CHANCE, //!< 出現率チェックを行う
+    VISUAL_ONLY, //!< 視覚的な表示のみ行う
+};
+
 enum class ItemKindType : short;
 class BaseitemConfig;
 class BaseitemRecord;
