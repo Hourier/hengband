@@ -97,16 +97,16 @@ void do_cmd_knowledge_artifacts(PlayerType *player_ptr, ArtifactKnowledgeMode mo
 /*
  * Display the objects in a group.
  */
-static void display_object_list(int col, int row, int per_page, const std::vector<short> &object_idx, int object_cur, int object_top, bool visual_only)
+static void display_object_list(int col, int row, int per_page, const std::vector<short> &bi_ids, int current_bi_id, int top_bi_id, bool visual_only)
 {
     const auto is_wizard = AngbandWorld::get_instance().wizard;
     const auto &baseitems = BaseitemList::get_instance();
     const auto &baseitem_records = BaseitemRecords::get_instance();
     const auto &baseitem_configs = BaseitemConfigs::get_instance();
     const auto &empty_symbol = BaseitemService::get_dummy_symbol();
-    int i;
-    for (i = 0; i < per_page && (object_idx[object_top + i] >= 0); i++) {
-        const auto bi_id = object_idx[object_top + i];
+    auto i = 0;
+    for (; i < per_page && top_bi_id + i < static_cast<int>(bi_ids.size()); i++) {
+        const auto bi_id = bi_ids[top_bi_id + i];
         const auto &baseitem = baseitems.get_baseitem(bi_id);
         const auto &baseitem_record = baseitem_records.get_record(bi_id);
         const auto &baseitem_config = baseitem_configs.get_config(bi_id);
@@ -117,7 +117,7 @@ static void display_object_list(int col, int row, int per_page, const std::vecto
         const auto &flavor_baseitem = !visual_only && has_flavor ? baseitems.get_baseitem(appearance_id) : baseitem;
         const auto &flavor_config = !visual_only && has_flavor ? baseitem_configs.get_config(appearance_id) : baseitem_config;
 
-        attr = ((i + object_top == object_cur) ? cursor : attr);
+        attr = ((i + top_bi_id == current_bi_id) ? cursor : attr);
         const auto is_flavor_only = has_flavor && (visual_only || !baseitem_record.is_aware());
         const auto item_name = is_flavor_only ? flavor_baseitem.flavor_name : baseitem.stripped_name();
         c_prt(attr, item_name.data(), row + i, col);
@@ -167,9 +167,8 @@ void do_cmd_knowledge_objects(PlayerType *player_ptr, bool *need_redraw, bool vi
     byte char_left = 0;
     const auto &[wid, hgt] = term_get_size();
     auto browser_rows = hgt - 8;
-    auto &baseitems = BaseitemList::get_instance();
     auto &baseitem_configs = BaseitemConfigs::get_instance();
-    std::vector<short> bi_ids(baseitems.size());
+    std::vector<short> bi_ids;
 
     const auto max_element = std::max_element(ITEM_KIND_NAMES_GROUP.begin(), ITEM_KIND_NAMES_GROUP.end(),
         [](auto x, auto y) { return x.length() < y.length(); });
@@ -190,8 +189,7 @@ void do_cmd_knowledge_objects(PlayerType *player_ptr, bool *need_redraw, bool vi
         }
     } else {
         auto &flavor_config = visual_only ? baseitem_configs.get_config(bi_id) : BaseitemService::get_flavor_config(bi_id);
-        bi_ids[0] = bi_id;
-        bi_ids[1] = -1;
+        bi_ids = { bi_id };
         const auto height = browser_rows - 1;
         auto color = flavor_config.get_color();
         auto character = flavor_config.get_character();
@@ -268,6 +266,8 @@ void do_cmd_knowledge_objects(PlayerType *player_ptr, bool *need_redraw, bool vi
             if (old_grp_cur != grp_cur) {
                 old_grp_cur = grp_cur;
                 bi_ids = BaseitemService::collect_baseitem_ids(grp_idx[grp_cur], bcm);
+                current_bi_id = 0;
+                top_bi_id = 0;
             }
 
             while (current_bi_id < top_bi_id) {
