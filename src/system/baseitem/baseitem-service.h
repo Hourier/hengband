@@ -1,8 +1,16 @@
 #pragma once
 
+#include "util/flag-group.h"
 #include <vector>
 
+enum class BaseitemCollectionMode {
+    CHECK_CHANCE, //!< 出現率チェックを行う
+    VISUAL_ONLY, //!< 視覚的な表示のみ行う
+    MAX,
+};
+
 enum class ItemKindType : short;
+class BaseitemDefinition;
 class BaseitemConfig;
 class BaseitemRecord;
 class DisplaySymbol;
@@ -18,7 +26,10 @@ public:
     static void shuffle_flavors();
     static void mark_common_items_as_aware();
     static void initialize_items_flavor();
+    static BaseitemConfig &get_flavor_config(short bi_id);
+    static std::vector<short> collect_baseitem_ids(int grp_cur, const EnumClassFlagGroup<BaseitemCollectionMode> &mode);
 
 private:
     static void shuffle_flavors(ItemKindType tval);
+    static bool check_chance(const EnumClassFlagGroup<BaseitemCollectionMode> &mode, const BaseitemDefinition &baseitem, const BaseitemRecord &record);
 };
