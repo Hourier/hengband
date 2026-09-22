@@ -79,8 +79,6 @@
  * </p>
  */
 
-#ifdef WINDOWS
-
 #include "bot/bot-control-server.h"
 #include "cmd-io/cmd-save.h"
 #include "cmd-visual/cmd-draw.h"
@@ -2959,5 +2957,3 @@ int WINAPI WinMain(
     }
 #endif
 }
-
-#endif /* WINDOWS */
