@@ -160,10 +160,15 @@ void do_cmd_knowledge(PlayerType *player_ptr)
             output_bot_json_knowledge_snapshot(player_ptr, BotKnowledgeCategory::PETS);
             do_cmd_knowledge_pets(player_ptr);
             break;
-        case 'k': /* Autopick */
+        case 'k': /* Autopick */ {
             output_bot_json_knowledge_snapshot(player_ptr, BotKnowledgeCategory::AUTOPICK);
-            do_cmd_knowledge_autopick(player_ptr);
+            const auto error_message = do_cmd_knowledge_autopick(player_ptr);
+            if (error_message) {
+                msg_print(*error_message);
+            }
+
             break;
+        }
         default: /* Unknown option */
             bell();
         }
