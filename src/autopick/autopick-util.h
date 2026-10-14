@@ -3,6 +3,7 @@
 #include "autopick/autopick-methods-table.h"
 #include "system/angband.h"
 #include "util/flag-group.h"
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <vector>
@@ -10,7 +11,7 @@
 #define MAX_LINELEN 1024
 #define MAX_AUTOPICK_DEFAULT 200
 #define MAX_YANK MAX_LINELEN
-constexpr auto MAX_AUTOPICK_ENTRIES = 6000;
+constexpr size_t MAX_AUTOPICK_ENTRIES = 6000;
 
 #define PT_DEFAULT 0
 #define PT_WITH_PNAME 1
@@ -46,6 +47,23 @@ enum class AutopickEntryStatus {
     EXPRESSION_ERROR = 3,
     INCLUDE = 4,
     MAX,
+};
+
+class AutopickEntryLine {
+public:
+    AutopickEntryLine() = default;
+    AutopickEntryLine(const std::string &line, const EnumClassFlagGroup<AutopickEntryStatus> &state)
+        : line(std::make_unique<std::string>(line))
+        , state(state) {
+        };
+
+    AutopickEntryLine(const AutopickEntryLine &) = delete;
+    AutopickEntryLine(AutopickEntryLine &&) = delete;
+    AutopickEntryLine &operator=(const AutopickEntryLine &) = delete;
+    AutopickEntryLine &operator=(AutopickEntryLine &&) = delete;
+
+    std::unique_ptr<std::string> line;
+    EnumClassFlagGroup<AutopickEntryStatus> state;
 };
 
 /*!
@@ -85,8 +103,7 @@ public:
     std::vector<std::string> yank{};
     bool yank_eol = false;
 
-    std::vector<std::unique_ptr<std::string>> lines_list;
-    std::vector<EnumClassFlagGroup<AutopickEntryStatus>> states;
+    std::vector<AutopickEntryLine> lines;
 
     uint16_t dirty_flags = 0;
     int dirty_line = -1;
@@ -96,6 +113,7 @@ public:
     bool changed = false;
 
     int count_line() const;
+    std::vector<std::string> get_entry_lines() const;
 };
 
 /*
