@@ -64,7 +64,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         tb->lines_list = read_pickpref_text_lines(player_ptr->base_name, &tb->filename_mode);
         tb->dirty_flags |= DIRTY_ALL | DIRTY_MODE | DIRTY_EXPRESSION;
         tb->cx = tb->cy = 0;
-        tb->mark = 0;
+        tb->marks.clear();
         tb->changed = false;
         break;
     }
@@ -74,8 +74,8 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         break;
     }
     case EditorCommandId::RETURN: {
-        if (tb->mark) {
-            tb->mark = 0;
+        if (tb->marks.any()) {
+            tb->marks.clear();
             tb->dirty_flags |= DIRTY_ALL;
         }
 
@@ -210,7 +210,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
             tb->cx = 0;
         }
 
-        tb->mark = 0;
+        tb->marks.clear();
         tb->dirty_flags |= DIRTY_ALL;
         tb->changed = true;
         break;
@@ -258,8 +258,8 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
             tb->cx = len;
         }
 
-        if (tb->mark) {
-            tb->mark = 0;
+        if (tb->marks.any()) {
+            tb->marks.clear();
             tb->dirty_flags |= DIRTY_ALL;
         }
 
@@ -293,13 +293,13 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         break;
     }
     case EditorCommandId::BLOCK: {
-        if (tb->mark) {
-            tb->mark = 0;
+        if (tb->marks.any()) {
+            tb->marks.clear();
             tb->dirty_flags |= DIRTY_ALL;
             break;
         }
 
-        tb->mark = MARK_MARK;
+        tb->marks.set(AutopickMark::MARK);
         if (com_id == tb->old_com_id) {
             int tmp = tb->cy;
             tb->cy = tb->my;
@@ -326,8 +326,8 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
             tb->cx = len;
         }
 
-        if (tb->mark) {
-            tb->mark = 0;
+        if (tb->marks.any()) {
+            tb->marks.clear();
             tb->dirty_flags |= DIRTY_ALL;
         }
 
@@ -351,8 +351,8 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         break;
     }
     case EditorCommandId::DELETE_CHAR: {
-        if (tb->mark) {
-            tb->mark = 0;
+        if (tb->marks.any()) {
+            tb->marks.clear();
             tb->dirty_flags |= DIRTY_ALL;
         }
 
@@ -380,8 +380,8 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         break;
     }
     case EditorCommandId::BACKSPACE: {
-        if (tb->mark) {
-            tb->mark = 0;
+        if (tb->marks.any()) {
+            tb->marks.clear();
             tb->dirty_flags |= DIRTY_ALL;
         }
 
