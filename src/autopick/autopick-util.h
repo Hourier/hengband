@@ -3,6 +3,7 @@
 #include "autopick/autopick-methods-table.h"
 #include "system/angband.h"
 #include "util/flag-group.h"
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <vector>
@@ -10,19 +11,10 @@
 #define MAX_LINELEN 1024
 #define MAX_AUTOPICK_DEFAULT 200
 #define MAX_YANK MAX_LINELEN
-#define MAX_LINES 6000
+constexpr size_t MAX_AUTOPICK_ENTRIES = 6000;
 
 #define PT_DEFAULT 0
 #define PT_WITH_PNAME 1
-
-#define MARK_MARK 0x01
-#define MARK_BY_SHIFT 0x02
-
-#define LSTAT_BYPASS 0x01
-#define LSTAT_EXPRESSION 0x02
-#define LSTAT_AUTOREGISTER 0x04
-#define LSTAT_EXPRESSION_ERROR 0x08
-#define LSTAT_INCLUDE 0x10
 
 /*!
  * @struct autopick_type
@@ -42,6 +34,37 @@ struct autopick_type {
 
 enum class EditorCommandId;
 class ItemEntity;
+enum class AutopickMark {
+    MARK = 0,
+    BY_SHIFT = 1,
+    MAX,
+};
+
+enum class AutopickEntryStatus {
+    BYPASS = 0,
+    EXPRESSION = 1,
+    AUTOREGISTER = 2,
+    EXPRESSION_ERROR = 3,
+    INCLUDE = 4,
+    MAX,
+};
+
+class AutopickEntryLine {
+public:
+    AutopickEntryLine() = default;
+    AutopickEntryLine(const std::string &line, const EnumClassFlagGroup<AutopickEntryStatus> &state)
+        : line(std::make_unique<std::string>(line))
+        , state(state) {
+        };
+
+    AutopickEntryLine(const AutopickEntryLine &) = delete;
+    AutopickEntryLine(AutopickEntryLine &&) = delete;
+    AutopickEntryLine &operator=(const AutopickEntryLine &) = delete;
+    AutopickEntryLine &operator=(AutopickEntryLine &&) = delete;
+
+    std::unique_ptr<std::string> line;
+    EnumClassFlagGroup<AutopickEntryStatus> state;
+};
 
 /*!
  * @brief 自動拾い設定ファイル用テキストエディタの状態を保持するクラス
@@ -71,7 +94,7 @@ public:
     int old_left = -1;
     int mx = 0;
     int my = 0;
-    byte mark = 0;
+    EnumClassFlagGroup<AutopickMark> marks{};
 
     std::shared_ptr<ItemEntity> search_item = nullptr;
     std::string search_str = "";
@@ -80,8 +103,7 @@ public:
     std::vector<std::string> yank{};
     bool yank_eol = false;
 
-    std::vector<std::unique_ptr<std::string>> lines_list;
-    byte states[MAX_LINES]{};
+    std::vector<AutopickEntryLine> lines;
 
     uint16_t dirty_flags = 0;
     int dirty_line = -1;
@@ -91,6 +113,7 @@ public:
     bool changed = false;
 
     int count_line() const;
+    std::vector<std::string> get_entry_lines() const;
 };
 
 /*
@@ -109,5 +132,5 @@ bool auto_inscribe_item(ItemEntity &item, int idx);
  */
 inline bool is_greater_autopick_max_line(int count)
 {
-    return count > MAX_LINES - 3;
+    return count > MAX_AUTOPICK_ENTRIES - 3;
 }
