@@ -61,7 +61,6 @@ libhengband_a_SOURCES = \
 	autopick/autopick-finder.cpp autopick/autopick-finder.h \
 	autopick/autopick-pref-processor.cpp autopick/autopick-pref-processor.h \
 	autopick/autopick-drawer.cpp autopick/autopick-drawer.h \
-	autopick/autopick-inserter-killer.cpp autopick/autopick-inserter-killer.h \
 	autopick/autopick-registry.cpp autopick/autopick-registry.h \
 	autopick/autopick-command-menu.cpp autopick/autopick-command-menu.h \
 	autopick/autopick-editor-command.cpp autopick/autopick-editor-command.h \
@@ -1227,7 +1226,6 @@ hengband_test_SOURCES = \
 	\
 	test/autopick/test-autopick-editor-command.cpp \
 	test/autopick/test-autopick-finder.cpp \
-	test/autopick/test-autopick-inserter-killer.cpp \
 	test/autopick/test-autopick-reader-writer.cpp \
 	test/autopick/test-autopick-text-body.cpp \
 	test/autopick/test-autopick-util.cpp \

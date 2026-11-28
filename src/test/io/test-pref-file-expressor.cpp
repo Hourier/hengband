@@ -10,7 +10,6 @@
 
 #include "autopick/autopick-dirty-flags.h"
 #include "autopick/autopick-drawer.h"
-#include "autopick/autopick-inserter-killer.h"
 #include "autopick/autopick-text-body.h"
 #include "io/files-util.h"
 #include "io/interpret-pref-file.h"
@@ -184,7 +183,7 @@ TEST_CASE("autopick editor checks included conditions without changing settings"
     body.dirty_flags = 0;
     body.dirty_line = -1;
     body.cx = static_cast<int>(body.lines[0].line.size());
-    insert_single_letter(&body, 'f');
+    body.insert_single_letter('f');
     update_autopick_expression_states(nullptr, &body);
     CHECK((body.lines[3].state.has(AutopickEntryStatus::EXPRESSION_ERROR)));
     CHECK((body.lines[3].state.has(AutopickEntryStatus::BYPASS)));

@@ -56,6 +56,12 @@ public:
     void kill_yank_chain();
     void add_str_to_yank(std::string_view str);
     void copy_text_to_yank();
+    void check_expression_line(int y);
+    void insert_return_code();
+    bool insert_macro_line();
+    bool insert_keymap_line();
+    void insert_single_letter(int key);
+    void kill_line_segment(int y, int x0, int x1, bool whole);
 
     int cx;
     int cy;

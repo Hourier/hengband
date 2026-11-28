@@ -12,7 +12,6 @@
 #include "autopick/autopick-entry.h"
 #include "autopick/autopick-finder.h"
 #include "autopick/autopick-flags-table.h"
-#include "autopick/autopick-inserter-killer.h"
 #include "autopick/autopick-methods-table.h"
 #include "autopick/autopick-reader-writer.h"
 #include "autopick/autopick-text-body.h"
@@ -83,7 +82,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
             tb->dirty_flags |= DIRTY_ALL;
         }
 
-        insert_return_code(tb);
+        tb->insert_return_code();
         tb->cy++;
         tb->cx = 0;
         tb->dirty_flags |= DIRTY_ALL;
@@ -185,14 +184,14 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
                 bx2 = len;
             }
 
-            kill_line_segment(tb, tb->cy, bx1, bx2, true);
+            tb->kill_line_segment(tb->cy, bx1, bx2, true);
             tb->cx = bx1;
         } else {
             const auto by1 = std::min(tb->my, tb->cy);
             const auto by2 = std::max(tb->my, tb->cy);
             for (auto y = by2; y >= by1; y--) {
                 const int len = tb->lines[y].line.length();
-                kill_line_segment(tb, y, 0, len, true);
+                tb->kill_line_segment(y, 0, len, true);
             }
 
             tb->cy = by1;
@@ -259,7 +258,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
 
             const auto is_last_yank_line = i + 1 == tb->yank.size();
             if (!is_last_yank_line || tb->yank_eol) {
-                insert_return_code(tb);
+                tb->insert_return_code();
                 tb->lines[tb->cy].line = std::move(buf);
                 tb->cx = 0;
                 tb->cy++;
@@ -323,7 +322,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
 
         if (tb->cx < len) {
             tb->add_str_to_yank(&(tb->lines[tb->cy].line[tb->cx]));
-            kill_line_segment(tb, tb->cy, tb->cx, len, false);
+            tb->kill_line_segment(tb->cy, tb->cx, len, false);
             tb->dirty_line = tb->cy;
             break;
         }
@@ -389,7 +388,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         tb->lines[tb->cy].line.erase(prev_cx, tb->cx - prev_cx);
         tb->cx = prev_cx;
         tb->dirty_line = tb->cy;
-        check_expression_line(tb, tb->cy);
+        tb->check_expression_line(tb->cy);
         tb->changed = true;
         break;
     }
@@ -465,7 +464,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         }
 
         tb->cx = 0;
-        insert_return_code(tb);
+        tb->insert_return_code();
         tb->lines[tb->cy].line = autopick_line_from_entry(*entry);
         tb->dirty_flags |= DIRTY_SCREEN;
         break;
@@ -476,7 +475,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         }
 
         tb->cx = 0;
-        insert_return_code(tb);
+        tb->insert_return_code();
         tb->lines[tb->cy].line = tb->last_destroyed;
         tb->dirty_flags |= DIRTY_ALL;
         tb->changed = true;
@@ -485,10 +484,10 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
     case EditorCommandId::INSERT_BLOCK: {
         const auto expression = fmt::format("?:[AND [EQU $RACE {}] [EQU $CLASS {}] [GEQ $LEVEL {:02}]]", rp_ptr->title.en_string(), cp_ptr->title.en_string(), player_ptr->lev);
         tb->cx = 0;
-        insert_return_code(tb);
+        tb->insert_return_code();
         tb->lines[tb->cy].line = expression;
         tb->cy++;
-        insert_return_code(tb);
+        tb->insert_return_code();
         tb->lines[tb->cy].line = "?:1";
         tb->dirty_flags |= DIRTY_ALL;
         tb->changed = true;
@@ -500,7 +499,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         constexpr auto prompt = _("P:<トリガーキー>: ", "P:<Trigger key>: ");
         term_putstr(0, tb->cy - tb->upper + 1, tb->wid - 1, TERM_YELLOW, prompt);
         const InputContextScope context_scope(InputKind::COMMAND_CHAR, prompt);
-        if (!insert_macro_line(tb)) {
+        if (!tb->insert_macro_line()) {
             break;
         }
 
@@ -516,7 +515,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         const auto mes = fmt::format("C:{}:<{}>: ", enum2i(mode), _("コマンドキー", "Keypress"));
         term_putstr(0, tb->cy - tb->upper + 1, tb->wid - 1, TERM_YELLOW, mes);
         const InputContextScope context_scope(InputKind::COMMAND_CHAR, mes);
-        if (!insert_keymap_line(tb)) {
+        if (!tb->insert_keymap_line()) {
             break;
         }
 

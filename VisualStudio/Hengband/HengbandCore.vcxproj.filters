@@ -390,9 +390,6 @@
     <ClCompile Include="..\..\src\autopick\autopick-initializer.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\autopick\autopick-inserter-killer.cpp">
-      <Filter>autopick</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\autopick\autopick-keys-table.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
@@ -3106,9 +3103,6 @@
       <Filter>autopick</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\autopick\autopick-initializer.h">
-      <Filter>autopick</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\autopick\autopick-inserter-killer.h">
       <Filter>autopick</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\autopick\autopick-keys-table.h">

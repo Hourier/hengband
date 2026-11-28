@@ -6,7 +6,6 @@
 #include "autopick/autopick-editor-command.h"
 #include "autopick/autopick-entry.h"
 #include "autopick/autopick-initializer.h"
-#include "autopick/autopick-inserter-killer.h"
 #include "autopick/autopick-menu-data-table.h"
 #include "autopick/autopick-pref-processor.h"
 #include "autopick/autopick-reader-writer.h"
@@ -180,7 +179,7 @@ void do_cmd_edit_autopick(PlayerType *player_ptr)
             com_id = do_command_menu(0, 0);
             tb->dirty_flags |= DIRTY_SCREEN;
         } else if (!iscntrl((unsigned char)key)) {
-            insert_single_letter(tb, key);
+            tb->insert_single_letter(key);
         } else {
             com_id = CommandMenuData::get_instance().get_com_id((char)key);
         }

@@ -157,9 +157,6 @@
     <ClCompile Include="..\..\src\test\autopick\test-autopick-finder.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\autopick\test-autopick-inserter-killer.cpp">
-      <Filter>autopick</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\test\autopick\test-autopick-reader-writer.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
