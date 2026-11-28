@@ -8,6 +8,7 @@
 #include "autopick/autopick-dirty-flags.h"
 #include "autopick/autopick-editor-command.h"
 #include "autopick/autopick-inserter-killer.h"
+#include "autopick/autopick-text-body.h"
 #include "autopick/autopick-util.h"
 #include "system/item/item-entity.h"
 
@@ -290,16 +291,6 @@ TEST_CASE("is_inside_multibyte_char does not treat the end of a line after a lon
     CHECK_FALSE(is_inside_multibyte_char(LINE_WITH_LONE_LEAD_BYTE, 3));
 }
 
-TEST_CASE("is_cursor_inside_multibyte_char checks the cursor position on the cursor line")
-{
-    const auto line = cat(KANJI_KAN, "a");
-
-    CHECK_FALSE(make_text_body_with_line(line, 0).is_cursor_inside_multibyte_char());
-    CHECK(make_text_body_with_line(line, 1).is_cursor_inside_multibyte_char());
-    CHECK_FALSE(make_text_body_with_line(line, static_cast<int>(KANJI_KAN.length())).is_cursor_inside_multibyte_char());
-    CHECK_FALSE(make_text_body_with_line(line, 10).is_cursor_inside_multibyte_char());
-}
-
 TEST_CASE("insert_return_code does not split a double-byte character")
 {
     auto tb = make_text_body_with_line(cat(KANJI_KAN, KANJI_JI), 1);
@@ -363,41 +354,5 @@ TEST_CASE("EditorCommandId::LEFT moves back one byte over a lone lead byte at th
 
     do_editor_command(nullptr, &tb, EditorCommandId::LEFT);
     CHECK(tb.cx == 2);
-}
-
-TEST_CASE("adjust_cursor_column puts the cursor at the recorded display column")
-{
-    const auto line = cat("a", KANJI_KAN, "b");
-    auto tb = make_text_body_with_line(line, 0);
-
-    SUBCASE("the column is on a character boundary")
-    {
-        tb.rec_cx = 3;
-        tb.adjust_cursor_column();
-        CHECK(tb.cx == static_cast<int>(1 + KANJI_KAN.length()));
-    }
-
-    SUBCASE("the column is the right half of a double-byte character on an even column")
-    {
-        tb.rec_cx = 2;
-        tb.adjust_cursor_column();
-        CHECK(tb.cx == static_cast<int>(1 + KANJI_KAN.length()));
-    }
-
-    SUBCASE("the column is the right half of a double-byte character on an odd column")
-    {
-        tb.lines[0].line = cat("ab", KANJI_KAN);
-        tb.rec_cx = 3;
-        tb.adjust_cursor_column();
-        CHECK(tb.cx == 2);
-    }
-}
-
-TEST_CASE("get_cursor_column counts the display width before the cursor")
-{
-    const auto line = cat("a", KANJI_KAN, "b");
-    CHECK(make_text_body_with_line(line, 0).get_cursor_column() == 0);
-    CHECK(make_text_body_with_line(line, static_cast<int>(1 + KANJI_KAN.length())).get_cursor_column() == 3);
-    CHECK(make_text_body_with_line(line, 100).get_cursor_column() == 4);
 }
 #endif

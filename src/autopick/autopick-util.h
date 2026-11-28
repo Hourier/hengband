@@ -3,7 +3,6 @@
 #include "autopick/autopick-methods-table.h"
 #include "system/angband.h"
 #include "util/flag-group.h"
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -30,80 +29,7 @@ struct autopick_type {
     void remove(int flag);
 };
 
-enum class EditorCommandId;
 class ItemEntity;
-enum class AutopickMark {
-    MARK = 0,
-    BY_SHIFT = 1,
-    MAX,
-};
-
-enum class AutopickEntryStatus {
-    BYPASS = 0,
-    EXPRESSION = 1,
-    AUTOREGISTER = 2,
-    EXPRESSION_ERROR = 3,
-    INCLUDE = 4,
-    MAX,
-};
-
-struct AutopickEntryLine {
-    std::string line;
-    EnumClassFlagGroup<AutopickEntryStatus> state;
-};
-
-/*!
- * @brief 自動拾い設定ファイル用テキストエディタの状態を保持するクラス
- *
- * 編集中の行データ・各行の状態・カーソル位置・画面スクロール位置・選択範囲・検索条件・ヤンクバッファ・再描画用ダーティ情報・変更フラグなどをまとめて管理する。
- * ユーザがエディタを操作する度に、このクラスのインスタンスを通じて状態が更新される。
- */
-class AutopickTextBody {
-public:
-    AutopickTextBody(int cx, int cy); // 画面表示はX→Yの順番であることが多いので一応揃える.
-
-    void adjust_cursor_column();
-    void update_cursor_column_record(EditorCommandId com_id, int cx_before, int column_before);
-    bool is_cursor_inside_multibyte_char() const;
-    int get_cursor_column() const;
-    bool has_line(int y) const;
-    bool is_last_line(int y) const;
-    void set_lines(std::vector<std::string> new_lines);
-
-    int cx;
-    int cy;
-    int rec_cx = 0; //!< 上下に移動する間に覚えておくカーソルの表示桁 (0 なら覚えていない)
-    int wid = 0;
-    int hgt = 0;
-    int upper = 0;
-    int left = 0;
-    int old_wid = -1;
-    int old_hgt = -1;
-    int old_cy = -1;
-    int old_upper = -1;
-    int old_left = -1;
-    int mx = 0;
-    int my = 0;
-    EnumClassFlagGroup<AutopickMark> marks{};
-
-    std::shared_ptr<ItemEntity> search_item = nullptr;
-    std::string search_str = "";
-    std::string last_destroyed = "";
-
-    std::vector<std::string> yank{};
-    bool yank_eol = false;
-
-    std::vector<AutopickEntryLine> lines;
-
-    uint16_t dirty_flags = 0;
-    int dirty_line = -1;
-    PickType filename_mode{};
-    EditorCommandId old_com_id{};
-
-    bool changed = false;
-
-    std::vector<std::string> get_entry_lines() const;
-};
 
 /*
  *  List for auto-picker/destroyer entries

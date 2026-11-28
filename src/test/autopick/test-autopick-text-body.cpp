@@ -1,21 +1,26 @@
 /*!
- * @brief 自動拾いエディタのカーソル列補正のテスト
+ * @brief 自動拾いエディタのテキスト本体のテスト
  */
+
+#include "autopick/autopick-text-body.h"
 
 #include "autopick/autopick-commands-table.h"
 #include "autopick/autopick-editor-util.h"
 #include "autopick/autopick-methods-table.h"
-#include "autopick/autopick-util.h"
+#include "test/string-helpers.h"
 
 #include <doctest/doctest.h>
 
 #include <initializer_list>
 #include <string>
+#include <string_view>
 #include <vector>
+
+using namespace test;
 
 namespace {
 
-//! 先頭からlines.size() の行数だけ文字列を埋めたAutopickTextBody を作る.
+//! 先頭から lines の行数だけ文字列を埋めた AutopickTextBody を作る.
 AutopickTextBody make_text_body(std::initializer_list<std::string> lines)
 {
     AutopickTextBody tb(0, 0);
@@ -23,6 +28,21 @@ AutopickTextBody make_text_body(std::initializer_list<std::string> lines)
 
     return tb;
 }
+
+#ifdef JP
+/*!
+ * @brief 1行だけを持ち、カーソルがその行にあるエディタの状態を作る
+ * @param line 行の内容
+ * @param cx カーソルの位置 (バイト)
+ * @return エディタの状態
+ */
+AutopickTextBody make_text_body_with_line(std::string_view line, int cx)
+{
+    auto tb = make_text_body({ std::string(line) });
+    tb.cx = cx;
+    return tb;
+}
+#endif
 
 }
 
@@ -117,3 +137,51 @@ TEST_CASE("set_lines keeps an empty line when no lines are given")
     tb.set_lines({});
     CHECK(tb.get_entry_lines() == std::vector<std::string>{ "" });
 }
+
+#ifdef JP
+TEST_CASE("is_cursor_inside_multibyte_char checks the cursor position on the cursor line")
+{
+    const auto line = cat(KANJI_KAN, "a");
+
+    CHECK_FALSE(make_text_body_with_line(line, 0).is_cursor_inside_multibyte_char());
+    CHECK(make_text_body_with_line(line, 1).is_cursor_inside_multibyte_char());
+    CHECK_FALSE(make_text_body_with_line(line, static_cast<int>(KANJI_KAN.length())).is_cursor_inside_multibyte_char());
+    CHECK_FALSE(make_text_body_with_line(line, 10).is_cursor_inside_multibyte_char());
+}
+
+TEST_CASE("adjust_cursor_column puts the cursor at the recorded display column")
+{
+    const auto line = cat("a", KANJI_KAN, "b");
+    auto tb = make_text_body_with_line(line, 0);
+
+    SUBCASE("the column is on a character boundary")
+    {
+        tb.rec_cx = 3;
+        tb.adjust_cursor_column();
+        CHECK(tb.cx == static_cast<int>(1 + KANJI_KAN.length()));
+    }
+
+    SUBCASE("the column is the right half of a double-byte character on an even column")
+    {
+        tb.rec_cx = 2;
+        tb.adjust_cursor_column();
+        CHECK(tb.cx == static_cast<int>(1 + KANJI_KAN.length()));
+    }
+
+    SUBCASE("the column is the right half of a double-byte character on an odd column")
+    {
+        tb.lines[0].line = cat("ab", KANJI_KAN);
+        tb.rec_cx = 3;
+        tb.adjust_cursor_column();
+        CHECK(tb.cx == 2);
+    }
+}
+
+TEST_CASE("get_cursor_column counts the display width before the cursor")
+{
+    const auto line = cat("a", KANJI_KAN, "b");
+    CHECK(make_text_body_with_line(line, 0).get_cursor_column() == 0);
+    CHECK(make_text_body_with_line(line, static_cast<int>(1 + KANJI_KAN.length())).get_cursor_column() == 3);
+    CHECK(make_text_body_with_line(line, 100).get_cursor_column() == 4);
+}
+#endif

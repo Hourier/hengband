@@ -5,7 +5,7 @@
 #include "autopick/autopick-finder.h"
 
 #include "autopick/autopick-dirty-flags.h"
-#include "autopick/autopick-util.h"
+#include "autopick/autopick-text-body.h"
 
 #include <doctest/doctest.h>
 

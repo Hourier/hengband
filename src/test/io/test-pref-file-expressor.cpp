@@ -12,7 +12,7 @@
 #include "autopick/autopick-drawer.h"
 #include "autopick/autopick-editor-util.h"
 #include "autopick/autopick-inserter-killer.h"
-#include "autopick/autopick-util.h"
+#include "autopick/autopick-text-body.h"
 #include "io/files-util.h"
 #include "io/interpret-pref-file.h"
 #include "io/read-pref-file.h"

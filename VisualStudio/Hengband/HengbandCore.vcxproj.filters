@@ -414,6 +414,9 @@
     <ClCompile Include="..\..\src\autopick\autopick-registry.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\autopick\autopick-text-body.cpp">
+      <Filter>autopick</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\autopick\autopick-util.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
@@ -3133,6 +3136,9 @@
       <Filter>autopick</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\autopick\autopick-registry.h">
+      <Filter>autopick</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\autopick\autopick-text-body.h">
       <Filter>autopick</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\autopick\autopick-util.h">

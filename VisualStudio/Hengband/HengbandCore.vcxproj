@@ -76,6 +76,7 @@
     <ClCompile Include="..\..\src\autopick\autopick-pref-processor.cpp" />
     <ClCompile Include="..\..\src\autopick\autopick-reader-writer.cpp" />
     <ClCompile Include="..\..\src\autopick\autopick-registry.cpp" />
+    <ClCompile Include="..\..\src\autopick\autopick-text-body.cpp" />
     <ClCompile Include="..\..\src\autopick\autopick-util.cpp" />
     <ClCompile Include="..\..\src\autopick\autopick.cpp" />
     <ClCompile Include="..\..\src\avatar\avatar-changer.cpp" />
@@ -987,6 +988,7 @@
     <ClInclude Include="..\..\src\autopick\autopick-pref-processor.h" />
     <ClInclude Include="..\..\src\autopick\autopick-reader-writer.h" />
     <ClInclude Include="..\..\src\autopick\autopick-registry.h" />
+    <ClInclude Include="..\..\src\autopick\autopick-text-body.h" />
     <ClInclude Include="..\..\src\autopick\autopick-util.h" />
     <ClInclude Include="..\..\src\autopick\autopick.h" />
     <ClInclude Include="..\..\src\avatar\avatar-changer.h" />

@@ -8,7 +8,6 @@
 #include "system/item/item-entity.h"
 #include "system/player-type-definition.h"
 #include "util/bit-flags-calculator.h"
-#include <ranges>
 #include <vector>
 
 /*!
@@ -50,9 +49,4 @@ bool auto_inscribe_item(ItemEntity &item, int idx)
 
     item.inscription = autopick_list[idx].insc;
     return true;
-}
-
-std::vector<std::string> AutopickTextBody::get_entry_lines() const
-{
-    return this->lines | std::views::transform(&AutopickEntryLine::line) | std::ranges::to<std::vector>();
 }

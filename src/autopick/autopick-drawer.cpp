@@ -9,6 +9,7 @@
 #include "autopick/autopick-dirty-flags.h"
 #include "autopick/autopick-editor-util.h"
 #include "autopick/autopick-entry.h"
+#include "autopick/autopick-text-body.h"
 #include "autopick/autopick-util.h"
 #include "io/pref-file-expressor.h"
 #include "io/read-pref-file.h"

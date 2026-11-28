@@ -3,6 +3,7 @@
 #include "autopick/autopick-entry.h"
 #include "autopick/autopick-flags-table.h"
 #include "autopick/autopick-methods-table.h"
+#include "autopick/autopick-text-body.h"
 #include "autopick/autopick-util.h"
 #include "locale/multibyte-char.h"
 #include "util/string-processor.h"

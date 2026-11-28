@@ -9,6 +9,7 @@
 #include "autopick/autopick-dirty-flags.h"
 #include "autopick/autopick-entry.h"
 #include "autopick/autopick-matcher.h"
+#include "autopick/autopick-text-body.h"
 #include "autopick/autopick-util.h"
 #include "flavor/flavor-describer.h"
 #include "flavor/object-flavor-types.h"

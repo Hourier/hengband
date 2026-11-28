@@ -13,9 +13,6 @@
     <Filter Include="cmd-action">
       <UniqueIdentifier>{29551d52-3134-550d-b7b4-e31d69fd59ce}</UniqueIdentifier>
     </Filter>
-    <Filter Include="cmd-io">
-      <UniqueIdentifier>{050a79fd-58ab-48f3-a881-f83ff7a488b7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="cmd-item">
       <UniqueIdentifier>{4fb7900b-d5fc-5337-97e2-09f5d3514d95}</UniqueIdentifier>
     </Filter>
@@ -163,6 +160,9 @@
     <ClCompile Include="..\..\src\test\autopick\test-autopick-reader-writer.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\autopick\test-autopick-text-body.cpp">
+      <Filter>autopick</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\birth\test-history-editor.cpp">
       <Filter>birth</Filter>
     </ClCompile>
@@ -171,9 +171,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\test\cmd-action\test-cmd-hissatsu.cpp">
       <Filter>cmd-action</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\cmd-io\test-cmd-autopick.cpp">
-      <Filter>cmd-io</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\cmd-item\test-cmd-item.cpp">
       <Filter>cmd-item</Filter>
