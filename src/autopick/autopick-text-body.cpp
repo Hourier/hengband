@@ -55,6 +55,86 @@ int find_column_position(std::string_view line, int column)
 }
 
 /*!
+ * @brief 行の指定の位置が多バイト文字の途中 (先頭バイトより後ろ) かどうかを判定する
+ * @param line 行
+ * @param pos 位置 (バイト)
+ * @return pos より前から多バイト文字が始まり、pos がその文字の後続のバイトであれば true
+ * @details
+ * 行末に後続のバイトが欠けた文字が残っている場合、その直後 (行の長さの位置) は文字の途中とみなさない。
+ * 英語版では常に false を返す。
+ */
+bool AutopickTextBody::is_inside_multibyte_char(std::string_view line, int pos)
+{
+    if ((pos <= 0) || std::cmp_greater_equal(pos, line.length())) {
+        return false;
+    }
+
+    return !is_mb_char_boundary(line, pos);
+}
+
+/*!
+ * @brief 指定の行があるかどうかを判定する
+ * @param y 行番号
+ * @return 指定の行があれば true
+ */
+bool AutopickTextBody::has_line(int y) const
+{
+    return (0 <= y) && (y < std::ssize(this->lines));
+}
+
+/*!
+ * @brief 指定の行が最終行かどうかを判定する
+ * @param y 行番号
+ * @return 指定の行より後ろに行が無ければ true
+ */
+bool AutopickTextBody::is_last_line(int y) const
+{
+    return !this->has_line(y + 1);
+}
+
+std::vector<std::string> AutopickTextBody::get_entry_lines() const
+{
+    return this->lines | std::views::transform(&AutopickEntryLine::line) | std::ranges::to<std::vector>();
+}
+
+/*!
+ * @brief カーソルの表示桁を返す
+ * @return カーソルより左にある文字の表示幅
+ */
+int AutopickTextBody::get_cursor_column() const
+{
+    const std::string_view line(this->lines[this->cy].line);
+    return static_cast<int>(str_display_width(line.substr(0, std::min<size_t>(this->cx, line.length()))));
+}
+
+/*!
+ * @brief カーソルが多バイト文字の途中にあるかどうかを判定する
+ * @return カーソルのある行で、カーソルの位置が多バイト文字の後続のバイトであれば true
+ */
+bool AutopickTextBody::is_cursor_inside_multibyte_char() const
+{
+    return is_inside_multibyte_char(this->lines[this->cy].line, this->cx);
+}
+
+/*!
+ * @brief 行をすべて差し替える
+ * @param new_lines 新しい行
+ * @details 行が無ければ空行を 1 行だけ持つ。各行の状態は初期化するので、描き直しの前に DIRTY_EXPRESSION で求め直すこと。
+ */
+void AutopickTextBody::set_lines(std::vector<std::string> new_lines)
+{
+    this->lines.clear();
+    this->lines.reserve(new_lines.size());
+    for (auto &line : new_lines) {
+        this->lines.emplace_back().line = std::move(line);
+    }
+
+    if (this->lines.empty()) {
+        this->lines.emplace_back();
+    }
+}
+
+/*!
  * @brief コマンドを処理する前にカーソル列とマーク列を行の範囲内に収める
  * @details 上下に移動している間は、覚えておいた表示桁にカーソルを置く。
  * キーワードの切り替え等はマークを残したまま行を短くするため、マーク中はマーク列も補正する。
@@ -93,83 +173,130 @@ void AutopickTextBody::update_cursor_column_record(EditorCommandId com_id, int c
 }
 
 /*!
- * @brief カーソルの表示桁を返す
- * @return カーソルより左にある文字の表示幅
+ * @brief 特殊キーを移動コマンドに読み替える
+ * @param skey 特殊キー。修飾キーのフラグを含む
+ * @return 対応する移動コマンド。移動キーでなければ EditorCommandId::NONE
+ * @details Shift を押していない移動キーは、Shift で始めた選択を解除する。
+ * Shift を押した移動キーは、選択が無ければカーソルの位置から選択を始める。
  */
-int AutopickTextBody::get_cursor_column() const
+EditorCommandId AutopickTextBody::analyze_move_key(uint32_t skey)
 {
-    const std::string_view line(this->lines[this->cy].line);
-    return static_cast<int>(str_display_width(line.substr(0, std::min<size_t>(this->cx, line.length()))));
-}
-
-/*!
- * @brief 行の指定の位置が多バイト文字の途中 (先頭バイトより後ろ) かどうかを判定する
- * @param line 行
- * @param pos 位置 (バイト)
- * @return pos より前から多バイト文字が始まり、pos がその文字の後続のバイトであれば true
- * @details
- * 行末に後続のバイトが欠けた文字が残っている場合、その直後 (行の長さの位置) は文字の途中とみなさない。
- * 英語版では常に false を返す。
- */
-bool AutopickTextBody::is_inside_multibyte_char(std::string_view line, int pos)
-{
-    if ((pos <= 0) || std::cmp_greater_equal(pos, line.length())) {
-        return false;
+    EditorCommandId com_id;
+    if (!(skey & SKEY_MASK)) {
+        return EditorCommandId::NONE;
     }
 
-    return !is_mb_char_boundary(line, pos);
-}
-
-/*!
- * @brief カーソルが多バイト文字の途中にあるかどうかを判定する
- * @return カーソルのある行で、カーソルの位置が多バイト文字の後続のバイトであれば true
- */
-bool AutopickTextBody::is_cursor_inside_multibyte_char() const
-{
-    return is_inside_multibyte_char(this->lines[this->cy].line, this->cx);
-}
-
-/*!
- * @brief 指定の行があるかどうかを判定する
- * @param y 行番号
- * @return 指定の行があれば true
- */
-bool AutopickTextBody::has_line(int y) const
-{
-    return (0 <= y) && (y < std::ssize(this->lines));
-}
-
-/*!
- * @brief 指定の行が最終行かどうかを判定する
- * @param y 行番号
- * @return 指定の行より後ろに行が無ければ true
- */
-bool AutopickTextBody::is_last_line(int y) const
-{
-    return !this->has_line(y + 1);
-}
-
-/*!
- * @brief 行をすべて差し替える
- * @param new_lines 新しい行
- * @details 行が無ければ空行を 1 行だけ持つ。各行の状態は初期化するので、描き直しの前に DIRTY_EXPRESSION で求め直すこと。
- */
-void AutopickTextBody::set_lines(std::vector<std::string> new_lines)
-{
-    this->lines.clear();
-    this->lines.reserve(new_lines.size());
-    for (auto &line : new_lines) {
-        this->lines.emplace_back().line = std::move(line);
+    switch (skey & ~SKEY_MOD_MASK) {
+    case SKEY_DOWN:
+        com_id = EditorCommandId::DOWN;
+        break;
+    case SKEY_LEFT:
+        com_id = EditorCommandId::LEFT;
+        break;
+    case SKEY_RIGHT:
+        com_id = EditorCommandId::RIGHT;
+        break;
+    case SKEY_UP:
+        com_id = EditorCommandId::UP;
+        break;
+    case SKEY_PGUP:
+        com_id = EditorCommandId::PGUP;
+        break;
+    case SKEY_PGDOWN:
+        com_id = EditorCommandId::PGDOWN;
+        break;
+    case SKEY_HOME:
+        com_id = any_bits(skey, SKEY_MOD_CONTROL) ? EditorCommandId::TOP : EditorCommandId::BOL;
+        break;
+    case SKEY_END:
+        com_id = any_bits(skey, SKEY_MOD_CONTROL) ? EditorCommandId::BOTTOM : EditorCommandId::EOL;
+        break;
+    default:
+        return EditorCommandId::NONE;
     }
 
-    if (this->lines.empty()) {
-        this->lines.emplace_back();
+    if (!(skey & SKEY_MOD_SHIFT)) {
+        // Shift を押していない移動キーは、Shift で始めた選択を解除する。
+        if (this->marks.has(AutopickMark::BY_SHIFT)) {
+            this->marks.clear();
+            this->dirty_flags |= DIRTY_ALL;
+        }
+
+        return com_id;
     }
+
+    if (this->marks.any()) {
+        return com_id;
+    }
+
+    const int len = this->lines[this->cy].line.length();
+    this->marks.set(AutopickMark::MARK);
+    this->marks.set(AutopickMark::BY_SHIFT);
+    this->my = this->cy;
+    this->mx = this->cx;
+    if (this->cx > len) {
+        this->mx = len;
+    }
+
+    if (com_id == EditorCommandId::UP || com_id == EditorCommandId::DOWN) {
+        this->dirty_flags |= DIRTY_ALL;
+    } else {
+        this->dirty_line = this->cy;
+    }
+
+    return com_id;
 }
 
-std::vector<std::string> AutopickTextBody::get_entry_lines() const
+/*!
+ * @brief 文字列に一致する次または前の行へカーソルを動かす
+ * @param pattern 探す文字列
+ * @param forward 後ろへ探すなら true、前へ探すなら false
+ * @details カーソルのある行は探さない。条件式で飛ばされている行は、有効な一致が他に無いときだけ候補にする。
+ */
+void AutopickTextBody::search_for_string(std::string_view pattern, bool forward)
 {
-    return this->lines | std::views::transform(&AutopickEntryLine::line) | std::ranges::to<std::vector>();
+    int bypassed_cy = -1;
+    int bypassed_cx = 0;
+
+    int i = this->cy;
+    while (true) {
+        if (!this->has_line(forward ? ++i : --i)) {
+            break;
+        }
+
+        const auto line_data = this->lines[i].line.data();
+        const auto *pos = angband_strstr(line_data, pattern);
+        if (!pos) {
+            continue;
+        }
+
+        if ((this->lines[i].state.has(AutopickEntryStatus::BYPASS)) && this->lines[i].state.has_not(AutopickEntryStatus::EXPRESSION)) {
+            if (bypassed_cy == -1) {
+                bypassed_cy = i;
+                bypassed_cx = static_cast<int>(pos - line_data);
+            }
+
+            continue;
+        }
+
+        this->cx = static_cast<int>(pos - line_data);
+        this->cy = i;
+
+        if (bypassed_cy != -1) {
+            this->dirty_flags |= DIRTY_SKIP_INACTIVE;
+        }
+
+        return;
+    }
+
+    if (bypassed_cy == -1) {
+        this->dirty_flags |= DIRTY_NOT_FOUND;
+        return;
+    }
+
+    this->cx = bypassed_cx;
+    this->cy = bypassed_cy;
+    this->dirty_flags |= DIRTY_INACTIVE;
 }
 
 /*!
@@ -363,22 +490,6 @@ void AutopickTextBody::add_keyword(BIT_FLAGS flg)
 }
 
 /*!
- * @brief ファイルの末尾に空行を足す
- * @return 空行を足した場合 true、最終行が既に空の場合は false
- */
-bool AutopickTextBody::add_empty_line()
-{
-    if (this->lines.back().line.empty()) {
-        return false;
-    }
-
-    this->lines.emplace_back();
-    this->dirty_flags |= DIRTY_EXPRESSION;
-    this->changed = true;
-    return true;
-}
-
-/*!
  * @brief ヤンクバッファを空にする
  */
 void AutopickTextBody::kill_yank_chain()
@@ -460,6 +571,22 @@ void AutopickTextBody::check_expression_line(int y)
 }
 
 /*!
+ * @brief ファイルの末尾に空行を足す
+ * @return 空行を足した場合 true、最終行が既に空の場合は false
+ */
+bool AutopickTextBody::add_empty_line()
+{
+    if (this->lines.back().line.empty()) {
+        return false;
+    }
+
+    this->lines.emplace_back();
+    this->dirty_flags |= DIRTY_EXPRESSION;
+    this->changed = true;
+    return true;
+}
+
+/*!
  * @brief カーソルの位置で行を分割し、残りを次の行に入れる
  * @details 多バイト文字の途中では分けず、その文字の後ろで分ける。カーソルは動かさない。
  */
@@ -473,6 +600,55 @@ void AutopickTextBody::insert_return_code()
     line.erase(split_pos);
     this->lines.emplace(this->lines.begin() + this->cy + 1)->line = std::move(rest);
     this->dirty_flags |= DIRTY_EXPRESSION;
+    this->changed = true;
+}
+
+/*!
+ * @brief カーソルの位置に1文字入れる
+ * @param key 入れる文字
+ * @details 範囲の選択は、文字を入れるときに解く。多バイト文字の入力が途中で切れて文字にならなければ、何も入れず選択も残す。
+ */
+void AutopickTextBody::insert_single_letter(int key)
+{
+    const auto c = static_cast<char>(key);
+    const auto ch = inkey_multibyte_char(c);
+    if (!ch) {
+        return;
+    }
+
+    if (this->marks.any()) {
+        this->marks.clear();
+        this->dirty_flags |= DIRTY_ALL;
+    }
+
+    const auto &line = this->lines[this->cy].line;
+    const auto head_len = std::min<size_t>(this->cx, line.length());
+    auto buf = line.substr(0, head_len);
+
+    if (is_mb_char_lead(c)) {
+        if (buf.size() + ch->length() < MAX_LINELEN) {
+            buf.append(*ch);
+            this->cx += static_cast<int>(ch->length());
+        } else {
+            bell();
+        }
+    } else {
+        if (buf.size() + 1 < MAX_LINELEN) {
+            buf.push_back(c);
+        }
+        this->cx++;
+    }
+
+    // 行の上限を超える分は、多バイト文字を分断しないように切り詰める
+    buf.append(line, head_len);
+    this->lines[this->cy].line = str_substr(std::move(buf), 0, MAX_LINELEN - 1);
+    const int len = this->lines[this->cy].line.length();
+    if (len < this->cx) {
+        this->cx = len;
+    }
+
+    this->dirty_line = this->cy;
+    this->check_expression_line(this->cy);
     this->changed = true;
 }
 
@@ -539,55 +715,6 @@ bool AutopickTextBody::insert_keymap_line()
 }
 
 /*!
- * @brief カーソルの位置に1文字入れる
- * @param key 入れる文字
- * @details 範囲の選択は、文字を入れるときに解く。多バイト文字の入力が途中で切れて文字にならなければ、何も入れず選択も残す。
- */
-void AutopickTextBody::insert_single_letter(int key)
-{
-    const auto c = static_cast<char>(key);
-    const auto ch = inkey_multibyte_char(c);
-    if (!ch) {
-        return;
-    }
-
-    if (this->marks.any()) {
-        this->marks.clear();
-        this->dirty_flags |= DIRTY_ALL;
-    }
-
-    const auto &line = this->lines[this->cy].line;
-    const auto head_len = std::min<size_t>(this->cx, line.length());
-    auto buf = line.substr(0, head_len);
-
-    if (is_mb_char_lead(c)) {
-        if (buf.size() + ch->length() < MAX_LINELEN) {
-            buf.append(*ch);
-            this->cx += static_cast<int>(ch->length());
-        } else {
-            bell();
-        }
-    } else {
-        if (buf.size() + 1 < MAX_LINELEN) {
-            buf.push_back(c);
-        }
-        this->cx++;
-    }
-
-    // 行の上限を超える分は、多バイト文字を分断しないように切り詰める
-    buf.append(line, head_len);
-    this->lines[this->cy].line = str_substr(std::move(buf), 0, MAX_LINELEN - 1);
-    const int len = this->lines[this->cy].line.length();
-    if (len < this->cx) {
-        this->cx = len;
-    }
-
-    this->dirty_line = this->cy;
-    this->check_expression_line(this->cy);
-    this->changed = true;
-}
-
-/*!
  * @brief 行の一部分を削除する
  * @param y 削除する行
  * @param x0 削除する範囲の先頭 (バイト)
@@ -619,131 +746,4 @@ void AutopickTextBody::kill_line_segment(int y, int x0, int x1, bool whole)
     this->lines[y].line = std::move(buf);
     this->check_expression_line(y);
     this->changed = true;
-}
-
-/*!
- * @brief 文字列に一致する次または前の行へカーソルを動かす
- * @param pattern 探す文字列
- * @param forward 後ろへ探すなら true、前へ探すなら false
- * @details カーソルのある行は探さない。条件式で飛ばされている行は、有効な一致が他に無いときだけ候補にする。
- */
-void AutopickTextBody::search_for_string(std::string_view pattern, bool forward)
-{
-    int bypassed_cy = -1;
-    int bypassed_cx = 0;
-
-    int i = this->cy;
-    while (true) {
-        if (!this->has_line(forward ? ++i : --i)) {
-            break;
-        }
-
-        const auto line_data = this->lines[i].line.data();
-        const auto *pos = angband_strstr(line_data, pattern);
-        if (!pos) {
-            continue;
-        }
-
-        if ((this->lines[i].state.has(AutopickEntryStatus::BYPASS)) && this->lines[i].state.has_not(AutopickEntryStatus::EXPRESSION)) {
-            if (bypassed_cy == -1) {
-                bypassed_cy = i;
-                bypassed_cx = static_cast<int>(pos - line_data);
-            }
-
-            continue;
-        }
-
-        this->cx = static_cast<int>(pos - line_data);
-        this->cy = i;
-
-        if (bypassed_cy != -1) {
-            this->dirty_flags |= DIRTY_SKIP_INACTIVE;
-        }
-
-        return;
-    }
-
-    if (bypassed_cy == -1) {
-        this->dirty_flags |= DIRTY_NOT_FOUND;
-        return;
-    }
-
-    this->cx = bypassed_cx;
-    this->cy = bypassed_cy;
-    this->dirty_flags |= DIRTY_INACTIVE;
-}
-
-/*!
- * @brief 特殊キーを移動コマンドに読み替える
- * @param skey 特殊キー。修飾キーのフラグを含む
- * @return 対応する移動コマンド。移動キーでなければ EditorCommandId::NONE
- * @details Shift を押していない移動キーは、Shift で始めた選択を解除する。
- * Shift を押した移動キーは、選択が無ければカーソルの位置から選択を始める。
- */
-EditorCommandId AutopickTextBody::analyze_move_key(uint32_t skey)
-{
-    EditorCommandId com_id;
-    if (!(skey & SKEY_MASK)) {
-        return EditorCommandId::NONE;
-    }
-
-    switch (skey & ~SKEY_MOD_MASK) {
-    case SKEY_DOWN:
-        com_id = EditorCommandId::DOWN;
-        break;
-    case SKEY_LEFT:
-        com_id = EditorCommandId::LEFT;
-        break;
-    case SKEY_RIGHT:
-        com_id = EditorCommandId::RIGHT;
-        break;
-    case SKEY_UP:
-        com_id = EditorCommandId::UP;
-        break;
-    case SKEY_PGUP:
-        com_id = EditorCommandId::PGUP;
-        break;
-    case SKEY_PGDOWN:
-        com_id = EditorCommandId::PGDOWN;
-        break;
-    case SKEY_HOME:
-        com_id = any_bits(skey, SKEY_MOD_CONTROL) ? EditorCommandId::TOP : EditorCommandId::BOL;
-        break;
-    case SKEY_END:
-        com_id = any_bits(skey, SKEY_MOD_CONTROL) ? EditorCommandId::BOTTOM : EditorCommandId::EOL;
-        break;
-    default:
-        return EditorCommandId::NONE;
-    }
-
-    if (!(skey & SKEY_MOD_SHIFT)) {
-        // Shift を押していない移動キーは、Shift で始めた選択を解除する。
-        if (this->marks.has(AutopickMark::BY_SHIFT)) {
-            this->marks.clear();
-            this->dirty_flags |= DIRTY_ALL;
-        }
-
-        return com_id;
-    }
-
-    if (this->marks.any()) {
-        return com_id;
-    }
-
-    const int len = this->lines[this->cy].line.length();
-    this->marks.set(AutopickMark::MARK);
-    this->marks.set(AutopickMark::BY_SHIFT);
-    this->my = this->cy;
-    this->mx = this->cx;
-    if (this->cx > len) {
-        this->mx = len;
-    }
-
-    if (com_id == EditorCommandId::UP || com_id == EditorCommandId::DOWN) {
-        this->dirty_flags |= DIRTY_ALL;
-    } else {
-        this->dirty_line = this->cy;
-    }
-
-    return com_id;
 }
