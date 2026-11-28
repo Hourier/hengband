@@ -151,16 +151,22 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\stdafx.cpp" />
-    <ClCompile Include="..\..\src\test\autopick\test-autopick-editor-util.cpp">
+    <ClCompile Include="..\..\src\test\autopick\test-autopick-editor-command.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\autopick\test-autopick-finder.cpp">
+      <Filter>autopick</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\autopick\test-autopick-inserter-killer.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\autopick\test-autopick-reader-writer.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\autopick\test-autopick-text-body.cpp">
+      <Filter>autopick</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\autopick\test-autopick-util.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\birth\test-history-editor.cpp">

@@ -1225,10 +1225,12 @@ hengband_test_SOURCES = \
 	test/system/quest-list-test-access.h \
 	test/system/spell-info-list-test-access.h \
 	\
-	test/autopick/test-autopick-editor-util.cpp \
+	test/autopick/test-autopick-editor-command.cpp \
 	test/autopick/test-autopick-finder.cpp \
+	test/autopick/test-autopick-inserter-killer.cpp \
 	test/autopick/test-autopick-reader-writer.cpp \
 	test/autopick/test-autopick-text-body.cpp \
+	test/autopick/test-autopick-util.cpp \
 	test/birth/test-history-editor.cpp \
 	test/bot/test-bot-json-output.cpp \
 	test/cmd-action/test-cmd-hissatsu.cpp \
