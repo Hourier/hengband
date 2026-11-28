@@ -94,7 +94,7 @@ Visual Studio の IDE から実行する場合は、`HengbandTest` を右クリ�
    TEST_CASE("SHA256 hashes an empty message")
    {
        util::SHA256 hash;
-       CHECK(util::to_string(hash.digest()) == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+       CHECK_EQ(util::to_string(hash.digest()), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
    }
    ```
 
@@ -144,14 +144,57 @@ Visual Studio の IDE から実行する場合は、`HengbandTest` を右クリ�
 
 ### テストケースとアサーション
 
+失敗しても後続の検証を続けるときは `CHECK` 系、これ以降を実行すると壊れるときだけ `REQUIRE` 系でそのテストケースを中断します。
+`REQUIRE` 系は、対応する `CHECK` 系の `CHECK` を `REQUIRE` に読み替えた名前です（`REQUIRE_EQ` など）。
+
+単一の比較と真偽は、式を分解しないマクロで書いてください。
+doctest は引数を期待値と実測値に区別しません。既存の `CHECK(actual == expected)` に合わせ、第 1 引数は実測値、第 2 引数は期待値です。
+`CHECK(actual == expected)` は `CHECK_EQ(actual, expected)` です。
+この使い分けの対象は、暫定的に新しく書くテストだけです。既存のテストを直し終えたら、この文を「対象は全てのテストです。」に書き換えてください。
+
+| いま `CHECK` に書いている式 | 使うマクロ |
+| --- | --- |
+| `actual == expected` | `CHECK_EQ(actual, expected)` |
+| `actual != expected` | `CHECK_NE(actual, expected)` |
+| `actual < expected` | `CHECK_LT(actual, expected)` |
+| `actual > expected` | `CHECK_GT(actual, expected)` |
+| `actual <= expected` | `CHECK_LE(actual, expected)` |
+| `actual >= expected` | `CHECK_GE(actual, expected)` |
+| 式が真である | `CHECK_UNARY(expression)` |
+| 式が偽である | `CHECK_UNARY_FALSE(expression)` |
+| 1 つの比較に分けられない複合条件 | `CHECK(expression)` |
+
 ```cpp
 TEST_CASE("test case name")
 {
-    CHECK(a == b);           // 失敗しても後続の検証を続ける（基本はこちら）
-    REQUIRE(ptr != nullptr); // 失敗したらこのテストケースを即座に中断する
-                             // これ以降を実行すると壊れる場合に使う
+    CHECK_EQ(actual, expected); // 失敗しても後続の検証を続ける
+    CHECK_NE(actual, expected);
+    CHECK_LT(actual, expected);
+    CHECK_LE(n, 6);             // n <= 6
+    CHECK_UNARY(ready);
+    CHECK_UNARY_FALSE(failed);
+    CHECK(ready && n < 6);      // && や || で結んだ複合条件
+    REQUIRE_NE(ptr, nullptr);   // これ以降を実行すると壊れる場合に中断する
 }
 ```
+
+失敗時の展開は `左の値, 右の値` で、ラベルは付きません。左が実測値、右が期待値になるように書いてください。
+マクロ名は左の引数と右の引数の比較です。`CHECK_LE(actual, expected)` は `actual <= expected` です。
+ポインタがヌルであることは `CHECK_EQ(ptr, nullptr)` と書いてください。`CHECK(ptr == nullptr)` と同じ左右です。
+ポインタがヌルでないことは `CHECK_NE(ptr, nullptr)` と書いてください。`CHECK(ptr != nullptr)` と同じ左右です。
+両辺が `const char *` のときはポインタとして比べます。文字列として比べるときは `std::string` にしてください。
+同梱の doctest に `CHECK_TRUE` はないので、式が真であることは `CHECK_UNARY` と書きます。
+既存の `CHECK_FALSE` は `CHECK_UNARY_FALSE` と同じく偽であることを検証し、こちらは式を分解します。新しいテストでは `CHECK_UNARY_FALSE` を使ってください。
+
+この使い分けには次の効果があります。
+
+- マクロ名から、等しいのか、大小なのか、真偽なのかが読めます。
+- 比較の両辺が別の引数になるので、失敗したときの展開で両方の値を読めます。
+- これらのマクロは式を分解しません。分解する `CHECK(a == b)` よりコンパイルが短い、という結果が doctest 2.2.0 の公開ベンチマークにあります（[Cost of an assertion macro](https://github.com/doctest/doctest/blob/master/doc/markdown/benchmarks.md#cost-of-an-assertion-macro)）。同梱しているのは doctest 2.5.0 で、この数字はこのリポジトリで測ったものではありません。
+
+これらの 2 引数は関数の引数として評価され、評価順は未規定です。
+乱数を引く呼び出しを、1 つのマクロの中に 2 つ書かないでください。
+`check-rng-evaluation-order.py` はソースに書かれた `==` の両辺は見ますが、これらのマクロの内部にある呼び出しは見ません。
 
 ### SUBCASE
 
@@ -166,23 +209,26 @@ TEST_CASE("ProbabilityTable")
 
     SUBCASE("entried item is counted")
     {
-        CHECK(table.item_count() == 1);
+        CHECK_EQ(table.item_count(), 1);
     }
 
     SUBCASE("cleared table is empty")
     {
         table.clear();
-        CHECK(table.empty());
+        CHECK_UNARY(table.empty());
     }
 }
 ```
 
 ### 例外と浮動小数点数
 
+浮動小数点数は、許容誤差を明記してください。
+誤差の出る計算を、厳密な一致だけで判定しないでください。
+
 ```cpp
-CHECK_THROWS_AS(table.pick_one_at_random(), std::runtime_error);
+CHECK_THROWS_AS(table.pick_one_at_random(), std::runtime_error); // 第 1 引数は式、第 2 引数は例外の型
 CHECK_NOTHROW(do_something());
-CHECK(calculated_rate == doctest::Approx(0.25).epsilon(0.001));
+CHECK_EQ(calculated_rate, doctest::Approx(0.25).epsilon(0.001));
 ```
 
 ### 失敗時の情報を増やす
@@ -193,7 +239,7 @@ CHECK(calculated_rate == doctest::Approx(0.25).epsilon(0.001));
 ```cpp
 for (const auto &test : TEST_VECTORS) {
     CAPTURE(test.expected);
-    CHECK(...);
+    CHECK_EQ(actual, test.expected);
 }
 ```
 
@@ -228,7 +274,7 @@ using namespace test;
 #ifdef JP
 TEST_CASE("make_player_base_name truncates a long name")
 {
-    CHECK(make_player_base_name(repeat(KANJI_KAN, 16)) == repeat(KANJI_KAN, 15));
+    CHECK_EQ(make_player_base_name(repeat(KANJI_KAN, 16)), repeat(KANJI_KAN, 15));
 }
 #endif
 ```
@@ -268,7 +314,7 @@ TEST_CASE("dice roll stays within its range")
 {
     const auto restore_rng = test::scoped_rng(); // シードを指定するなら test::scoped_rng(999)
 
-    CHECK(randint1(6) <= 6);
+    CHECK_LE(randint1(6), 6);
 }
 ```
 
@@ -352,7 +398,7 @@ TEST_CASE("example: input_string waits for a string")
 {
     test::ScopedInputTerm term;
     term.expect({ InputKind::STRING, "Text:", StringInputDetails{ 20, "seed" } }, "\r");
-    CHECK(input_string("Text: ", 20, "seed", false) == "seed");
+    CHECK_EQ(input_string("Text: ", 20, "seed", false), "seed");
 }
 ```
 
@@ -388,12 +434,14 @@ doctest は `src/external-lib/include/` にあり、`check_include_style` が同
 `CHECK(式)` は `ExpressionDecomposer(...) << 式` に展開されるため、式に暗黙の型変換を伴う引数
 （文字列リテラルを `std::string_view` の引数へ渡すものなど）があると、MSVC が
 オーバーロードされた `<<` の左→右の評価順序を保証できないとして C4866 を出します。
+`CHECK_EQ`、`CHECK_NE`、`CHECK_LT`、`CHECK_GT`、`CHECK_LE`、`CHECK_GE`、`CHECK_UNARY`、`CHECK_UNARY_FALSE` は式を分解しないので、この警告の対象外です。
+`CHECK` と `CHECK_FALSE` は対象です。
 展開先はテストファイルなので、`ExternalWarningLevel` では抑止できません。
 
 左辺の `ExpressionDecomposer` の構築には副作用がなく、評価順序はテストの結果に影響しないため、
 `HengbandTest.vcxproj` の `DisableSpecificWarnings` で **テストプロジェクトに限って** C4866 を
 無効化しています（ゲーム本体では無効化していません）。
-**検証したい式は、結果を一旦変数で受けずに `CHECK` / `REQUIRE` へ直接書いて構いません。**
+**検証したい式は、結果を一旦変数で受けずにアサーションマクロへ直接書いて構いません。**
 
 ## テストしにくいコードをどう確かめるか
 
