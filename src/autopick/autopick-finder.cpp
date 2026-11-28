@@ -240,20 +240,20 @@ AutopickSearch get_string_for_search(PlayerType *player_ptr, const AutopickSearc
 /*!
  * @brief Search next line matches for o_ptr
  */
-void search_for_object(PlayerType *player_ptr, AutopickTextBody *tb, const ItemEntity *o_ptr, bool forward)
+void search_for_object(PlayerType *player_ptr, AutopickTextBody &atb, const ItemEntity *o_ptr, bool forward)
 {
     autopick_type an_entry, *entry = &an_entry;
     int bypassed_cy = -1;
-    int i = tb->cy;
+    auto i = atb.cy;
     const auto item_name = str_tolower(describe_flavor(player_ptr, *o_ptr, (OD_NO_FLAVOR | OD_OMIT_PREFIX | OD_NO_PLURAL)));
 
     while (true) {
         bool match;
-        if (!tb->has_line(forward ? ++i : --i)) {
+        if (!atb.has_line(forward ? ++i : --i)) {
             break;
         }
 
-        if (!autopick_new_entry(entry, tb->lines[i].line, false)) {
+        if (!autopick_new_entry(entry, atb.lines[i].line, false)) {
             continue;
         }
 
@@ -262,28 +262,28 @@ void search_for_object(PlayerType *player_ptr, AutopickTextBody *tb, const ItemE
             continue;
         }
 
-        if (tb->lines[i].state.has(AutopickEntryStatus::BYPASS)) {
+        if (atb.lines[i].state.has(AutopickEntryStatus::BYPASS)) {
             if (bypassed_cy == -1) {
                 bypassed_cy = i;
             }
             continue;
         }
 
-        tb->cx = 0;
-        tb->cy = i;
+        atb.cx = 0;
+        atb.cy = i;
         if (bypassed_cy != -1) {
-            tb->dirty_flags |= DIRTY_SKIP_INACTIVE;
+            atb.dirty_flags |= DIRTY_SKIP_INACTIVE;
         }
 
         return;
     }
 
     if (bypassed_cy == -1) {
-        tb->dirty_flags |= DIRTY_NOT_FOUND;
+        atb.dirty_flags |= DIRTY_NOT_FOUND;
         return;
     }
 
-    tb->cx = 0;
-    tb->cy = bypassed_cy;
-    tb->dirty_flags |= DIRTY_INACTIVE;
+    atb.cx = 0;
+    atb.cy = bypassed_cy;
+    atb.dirty_flags |= DIRTY_INACTIVE;
 }

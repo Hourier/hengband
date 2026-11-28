@@ -29,29 +29,29 @@ constexpr std::string_view AUTOREGISTER_DIRECTIVE = "$AUTOREGISTER";
 /*!
  * @brief 条件式の評価結果と、読込エラーによって無効になる後続行の状態を更新する
  */
-void update_autopick_expression_states(PlayerType *player_ptr, AutopickTextBody *tb)
+void update_autopick_expression_states(PlayerType *player_ptr, AutopickTextBody &atb)
 {
-    const auto edited_line = tb->dirty_line;
-    const auto include_edited = tb->has_line(edited_line) &&
-                                (tb->lines[edited_line].state.has(AutopickEntryStatus::INCLUDE) || tb->lines[edited_line].line.starts_with("%:"));
-    if (((tb->dirty_flags & (DIRTY_EXPRESSION | DIRTY_ALL)) == 0) && !include_edited) {
+    const auto edited_line = atb.dirty_line;
+    const auto include_edited = atb.has_line(edited_line) &&
+                                (atb.lines[edited_line].state.has(AutopickEntryStatus::INCLUDE) || atb.lines[edited_line].line.starts_with("%:"));
+    if (((atb.dirty_flags & (DIRTY_EXPRESSION | DIRTY_ALL)) == 0) && !include_edited) {
         return;
     }
 
     EnumClassFlagGroup<AutopickEntryStatus> state{};
-    for (size_t y = 0; y < tb->lines.size(); ++y) {
-        std::string_view s(tb->lines[y].line);
+    for (size_t y = 0; y < atb.lines.size(); ++y) {
+        std::string_view s(atb.lines[y].line);
         if (state.has_not(AutopickEntryStatus::BYPASS) && s.starts_with("%:") &&
             (check_autopick_file_conditions(player_ptr, s.substr(2)) == PREF_EXPRESSION_ERROR)) {
             state = { AutopickEntryStatus::BYPASS, AutopickEntryStatus::EXPRESSION_ERROR };
         }
         if ((state.has(AutopickEntryStatus::EXPRESSION_ERROR)) || !s.starts_with(EXPRESSION_DIRECTIVE_PREFIX)) {
-            tb->lines[y].state = state;
+            atb.lines[y].state = state;
             if (s.starts_with("%:")) {
-                tb->lines[y].state.set(AutopickEntryStatus::INCLUDE);
+                atb.lines[y].state.set(AutopickEntryStatus::INCLUDE);
             }
             if (s.starts_with(EXPRESSION_DIRECTIVE_PREFIX)) {
-                tb->lines[y].state.set(AutopickEntryStatus::EXPRESSION);
+                atb.lines[y].state.set(AutopickEntryStatus::EXPRESSION);
             }
             continue;
         }
@@ -73,125 +73,125 @@ void update_autopick_expression_states(PlayerType *player_ptr, AutopickTextBody 
 
         EnumClassFlagGroup<AutopickEntryStatus> tmp_state = state;
         tmp_state.set(AutopickEntryStatus::EXPRESSION);
-        tb->lines[y].state = tmp_state;
+        atb.lines[y].state = tmp_state;
     }
 
-    tb->dirty_flags |= DIRTY_ALL;
+    atb.dirty_flags |= DIRTY_ALL;
 }
 
 /*!
  * @brief Draw text
  */
-void draw_text_editor(PlayerType *player_ptr, AutopickTextBody *tb)
+void draw_text_editor(PlayerType *player_ptr, AutopickTextBody &atb)
 {
     int by1 = 0, by2 = 0;
 
-    std::tie(tb->wid, tb->hgt) = term_get_size();
+    std::tie(atb.wid, atb.hgt) = term_get_size();
 
     /*
      * Top line (-1), description line (-3), separator (-1)
      *  == -5
      */
-    tb->hgt -= 2 + DESCRIPT_HGT;
+    atb.hgt -= 2 + DESCRIPT_HGT;
 
     // カーソルを多バイト文字の途中に置かないよう、左右どちらかの文字の境界へ動かす
-    if (tb->is_cursor_inside_multibyte_char()) {
-        const auto &line = tb->lines[tb->cy].line;
-        const auto boundary = (tb->cx & 1) ? mb_char_start_pos(line, tb->cx) : mb_next_char_boundary(line, tb->cx);
-        tb->cx = static_cast<int>(boundary);
+    if (atb.is_cursor_inside_multibyte_char()) {
+        const auto &line = atb.lines[atb.cy].line;
+        const auto boundary = (atb.cx & 1) ? mb_char_start_pos(line, atb.cx) : mb_next_char_boundary(line, atb.cx);
+        atb.cx = static_cast<int>(boundary);
     }
-    if (tb->cy < tb->upper || tb->upper + tb->hgt <= tb->cy) {
-        tb->upper = tb->cy - (tb->hgt) / 2;
+    if (atb.cy < atb.upper || atb.upper + atb.hgt <= atb.cy) {
+        atb.upper = atb.cy - (atb.hgt) / 2;
     }
-    if (tb->upper < 0) {
-        tb->upper = 0;
+    if (atb.upper < 0) {
+        atb.upper = 0;
     }
-    const auto cursor_column = tb->get_cursor_column();
-    if ((cursor_column < tb->left + 10 && tb->left > 0) || tb->left + tb->wid - 5 <= cursor_column) {
-        tb->left = cursor_column - (tb->wid) * 2 / 3;
+    const auto cursor_column = atb.get_cursor_column();
+    if ((cursor_column < atb.left + 10 && atb.left > 0) || atb.left + atb.wid - 5 <= cursor_column) {
+        atb.left = cursor_column - (atb.wid) * 2 / 3;
     }
-    if (tb->left < 0) {
-        tb->left = 0;
-    }
-
-    if (tb->old_wid != tb->wid || tb->old_hgt != tb->hgt) {
-        tb->dirty_flags |= DIRTY_SCREEN;
-    } else if (tb->old_upper != tb->upper || tb->old_left != tb->left) {
-        tb->dirty_flags |= DIRTY_ALL;
+    if (atb.left < 0) {
+        atb.left = 0;
     }
 
-    if (tb->dirty_flags & DIRTY_SCREEN) {
-        tb->dirty_flags |= (DIRTY_ALL | DIRTY_MODE);
+    if (atb.old_wid != atb.wid || atb.old_hgt != atb.hgt) {
+        atb.dirty_flags |= DIRTY_SCREEN;
+    } else if (atb.old_upper != atb.upper || atb.old_left != atb.left) {
+        atb.dirty_flags |= DIRTY_ALL;
+    }
+
+    if (atb.dirty_flags & DIRTY_SCREEN) {
+        atb.dirty_flags |= (DIRTY_ALL | DIRTY_MODE);
         term_clear();
     }
 
-    if (tb->dirty_flags & DIRTY_MODE) {
+    if (atb.dirty_flags & DIRTY_MODE) {
         char buf[MAX_LINELEN]{};
-        int sepa_length = tb->wid;
+        int sepa_length = atb.wid;
         int j = 0;
         for (; j < sepa_length; j++) {
             buf[j] = '-';
         }
         buf[j] = '\0';
-        term_putstr(0, tb->hgt + 1, sepa_length, TERM_WHITE, buf);
+        term_putstr(0, atb.hgt + 1, sepa_length, TERM_WHITE, buf);
     }
 
-    update_autopick_expression_states(player_ptr, tb);
-    if (tb->marks.any()) {
-        tb->dirty_flags |= DIRTY_ALL;
+    update_autopick_expression_states(player_ptr, atb);
+    if (atb.marks.any()) {
+        atb.dirty_flags |= DIRTY_ALL;
 
-        by1 = std::min(tb->my, tb->cy);
-        by2 = std::max(tb->my, tb->cy);
+        by1 = std::min(atb.my, atb.cy);
+        by2 = std::max(atb.my, atb.cy);
     }
 
     int i;
-    for (i = 0; i < tb->hgt; i++) {
+    for (i = 0; i < atb.hgt; i++) {
         byte color;
-        int y = tb->upper + i;
+        int y = atb.upper + i;
 
-        if (!(tb->dirty_flags & DIRTY_ALL) && (tb->dirty_line != y)) {
+        if (!(atb.dirty_flags & DIRTY_ALL) && (atb.dirty_line != y)) {
             continue;
         }
 
-        if (!tb->has_line(y)) {
+        if (!atb.has_line(y)) {
             break;
         }
 
         // 表示を始める桁より左の文字を除く。全角文字がその桁にまたがるときは、その文字も除いて1桁右から描く
-        std::string_view msg(tb->lines[y].line);
+        std::string_view msg(atb.lines[y].line);
         auto skipped_width = 0;
-        while (!msg.empty() && (skipped_width < tb->left)) {
+        while (!msg.empty() && (skipped_width < atb.left)) {
             const auto ch = mb_first_char(msg);
             msg.remove_prefix(ch.length());
             skipped_width += static_cast<int>(str_display_width(ch));
         }
 
-        const auto leftcol = (skipped_width > tb->left) ? 1 : 0;
+        const auto leftcol = (skipped_width > atb.left) ? 1 : 0;
 
-        term_erase(0, i + 1, tb->wid);
-        if (tb->lines[y].state.has(AutopickEntryStatus::AUTOREGISTER)) {
+        term_erase(0, i + 1, atb.wid);
+        if (atb.lines[y].state.has(AutopickEntryStatus::AUTOREGISTER)) {
             color = TERM_L_RED;
         } else {
-            if (tb->lines[y].state.has(AutopickEntryStatus::BYPASS)) {
+            if (atb.lines[y].state.has(AutopickEntryStatus::BYPASS)) {
                 color = TERM_SLATE;
             } else {
                 color = TERM_WHITE;
             }
         }
 
-        if (tb->marks.none() || (y < by1 || by2 < y)) {
-            term_putstr(leftcol, i + 1, tb->wid - 1, color, msg);
+        if (atb.marks.none() || (y < by1 || by2 < y)) {
+            term_putstr(leftcol, i + 1, atb.wid - 1, color, msg);
         } else if (by1 != by2) {
-            term_putstr(leftcol, i + 1, tb->wid - 1, TERM_YELLOW, msg);
+            term_putstr(leftcol, i + 1, atb.wid - 1, TERM_YELLOW, msg);
         } else {
             /*
              * 選択範囲の前・選択範囲・選択範囲の後に分けて描く。選択範囲は表示を始める位置 x0 より左を除き、
              * 端が全角文字の途中にあれば (行頭に '!' などを足した場合など)、文字を割らないようにその文字を含める。
              */
-            const std::string_view line(tb->lines[y].line);
+            const std::string_view line(atb.lines[y].line);
             const auto x0 = line.length() - msg.length();
-            const auto bx1 = mb_char_start_pos(line, std::max<size_t>(std::min(tb->mx, tb->cx), x0));
-            const auto bx2 = mb_next_char_boundary(line, std::clamp<size_t>(std::max(tb->mx, tb->cx), bx1, line.length()));
+            const auto bx1 = mb_char_start_pos(line, std::max<size_t>(std::min(atb.mx, atb.cx), x0));
+            const auto bx2 = mb_next_char_boundary(line, std::clamp<size_t>(std::max(atb.mx, atb.cx), bx1, line.length()));
 
             term_gotoxy(leftcol, i + 1);
             term_addstr(-1, color, line.substr(x0, bx1 - x0));
@@ -200,12 +200,12 @@ void draw_text_editor(PlayerType *player_ptr, AutopickTextBody *tb)
         }
     }
 
-    for (; i < tb->hgt; i++) {
-        term_erase(0, i + 1, tb->wid);
+    for (; i < atb.hgt; i++) {
+        term_erase(0, i + 1, atb.wid);
     }
 
-    bool is_dirty_diary = (tb->dirty_flags & (DIRTY_ALL | DIRTY_NOT_FOUND | DIRTY_NO_SEARCH)) != 0;
-    bool is_updated = tb->old_cy != tb->cy || is_dirty_diary || tb->dirty_line == tb->cy;
+    bool is_dirty_diary = (atb.dirty_flags & (DIRTY_ALL | DIRTY_NOT_FOUND | DIRTY_NO_SEARCH)) != 0;
+    bool is_updated = atb.old_cy != atb.cy || is_dirty_diary || atb.dirty_line == atb.cy;
     if (!is_updated) {
         return;
     }
@@ -213,23 +213,23 @@ void draw_text_editor(PlayerType *player_ptr, AutopickTextBody *tb)
     autopick_type an_entry, *entry = &an_entry;
     std::string str1, str2;
     for (int j = 0; j < DESCRIPT_HGT; j++) {
-        term_erase(0, tb->hgt + 2 + j, tb->wid);
+        term_erase(0, atb.hgt + 2 + j, atb.wid);
     }
 
-    if (tb->dirty_flags & DIRTY_NOT_FOUND) {
-        str1 = fmt::format(_("パターンが見つかりません: {}", "Pattern not found: {}"), tb->search_str);
-    } else if (tb->dirty_flags & DIRTY_SKIP_INACTIVE) {
-        str1 = fmt::format(_("無効状態の行をスキップしました。({}を検索中)", "Some inactive lines are skipped. (Searching {})"), tb->search_str);
-    } else if (tb->dirty_flags & DIRTY_INACTIVE) {
-        str1 = fmt::format(_("無効状態の行だけが見付かりました。({}を検索中)", "Found only an inactive line. (Searching {})"), tb->search_str);
-    } else if (tb->dirty_flags & DIRTY_NO_SEARCH) {
+    if (atb.dirty_flags & DIRTY_NOT_FOUND) {
+        str1 = fmt::format(_("パターンが見つかりません: {}", "Pattern not found: {}"), atb.search_str);
+    } else if (atb.dirty_flags & DIRTY_SKIP_INACTIVE) {
+        str1 = fmt::format(_("無効状態の行をスキップしました。({}を検索中)", "Some inactive lines are skipped. (Searching {})"), atb.search_str);
+    } else if (atb.dirty_flags & DIRTY_INACTIVE) {
+        str1 = fmt::format(_("無効状態の行だけが見付かりました。({}を検索中)", "Found only an inactive line. (Searching {})"), atb.search_str);
+    } else if (atb.dirty_flags & DIRTY_NO_SEARCH) {
         str1 = _("検索するパターンがありません(^S で検索)。", "No pattern to search. (Press ^S to search.)");
-    } else if (tb->lines[tb->cy].state.has(AutopickEntryStatus::EXPRESSION_ERROR)) {
+    } else if (atb.lines[atb.cy].state.has(AutopickEntryStatus::EXPRESSION_ERROR)) {
         str1 = _("条件式エラーのため、この行以降は読み込まれません。", "A condition error prevents loading this and subsequent lines.");
-    } else if (tb->lines[tb->cy].line[0] == '#') {
+    } else if (atb.lines[atb.cy].line[0] == '#') {
         str1 = _("この行はコメントです。", "This line is a comment.");
-    } else if (tb->lines[tb->cy].line[0] && tb->lines[tb->cy].line[1] == ':') {
-        switch (tb->lines[tb->cy].line[0]) {
+    } else if (atb.lines[atb.cy].line[0] && atb.lines[atb.cy].line[1] == ':') {
+        switch (atb.lines[atb.cy].line[0]) {
         case '?':
             str1 = _("この行は条件分岐式です。", "This line is a Conditional Expression.");
             break;
@@ -244,9 +244,9 @@ void draw_text_editor(PlayerType *player_ptr, AutopickTextBody *tb)
             break;
         }
 
-        switch (tb->lines[tb->cy].line[0]) {
+        switch (atb.lines[atb.cy].line[0]) {
         case '?':
-            if (tb->lines[tb->cy].state.has(AutopickEntryStatus::BYPASS)) {
+            if (atb.lines[atb.cy].state.has(AutopickEntryStatus::BYPASS)) {
                 str2 = _("現在の式の値は「偽(=0)」です。", "The expression is 'False'(=0) currently.");
             } else {
                 str2 = _("現在の式の値は「真(=1)」です。", "The expression is 'True'(=1) currently.");
@@ -254,33 +254,33 @@ void draw_text_editor(PlayerType *player_ptr, AutopickTextBody *tb)
             break;
 
         default:
-            if (tb->lines[tb->cy].state.has(AutopickEntryStatus::AUTOREGISTER)) {
+            if (atb.lines[atb.cy].state.has(AutopickEntryStatus::AUTOREGISTER)) {
                 str2 = _("この行は後で削除されます。", "This line will be deleted later.");
             }
 
-            else if (tb->lines[tb->cy].state.has(AutopickEntryStatus::BYPASS)) {
+            else if (atb.lines[atb.cy].state.has(AutopickEntryStatus::BYPASS)) {
                 str2 = _("この行は現在は無効な状態です。", "This line is bypassed currently.");
             }
             break;
         }
-    } else if (autopick_new_entry(entry, tb->lines[tb->cy].line, false)) {
+    } else if (autopick_new_entry(entry, atb.lines[atb.cy].line, false)) {
         std::stringstream ss;
         ss << describe_autopick(*entry);
-        if (tb->lines[tb->cy].state.has(AutopickEntryStatus::AUTOREGISTER)) {
+        if (atb.lines[atb.cy].state.has(AutopickEntryStatus::AUTOREGISTER)) {
             ss << _("この行は後で削除されます。", "  This line will be deleted later.");
         }
 
-        if (tb->lines[tb->cy].state.has(AutopickEntryStatus::BYPASS)) {
+        if (atb.lines[atb.cy].state.has(AutopickEntryStatus::BYPASS)) {
             ss << _("この行は現在は無効な状態です。", "  This line is bypassed currently.");
         }
 
-        display_wrap_around(ss.str(), 81, tb->hgt + 2, 0);
+        display_wrap_around(ss.str(), 81, atb.hgt + 2, 0);
     }
 
     if (!str1.empty()) {
-        prt(str1, tb->hgt + 1 + 1, 0);
+        prt(str1, atb.hgt + 1 + 1, 0);
     }
     if (!str2.empty()) {
-        prt(str2, tb->hgt + 1 + 2, 0);
+        prt(str2, atb.hgt + 1 + 2, 0);
     }
 }

@@ -37,10 +37,9 @@ void do_cmd_edit_autopick(PlayerType *player_ptr)
     static int32_t old_autosave_turn = 0L;
     ape_quittance quit = APE_QUIT;
 
-    AutopickTextBody text_body(cx_save, cy_save);
-    AutopickTextBody *tb = &text_body;
-    tb->dirty_flags = DIRTY_ALL | DIRTY_MODE | DIRTY_EXPRESSION;
-    tb->filename_mode = PickType::DEFAULT;
+    AutopickTextBody atb(cx_save, cy_save);
+    atb.dirty_flags = DIRTY_ALL | DIRTY_MODE | DIRTY_EXPRESSION;
+    atb.filename_mode = PickType::DEFAULT;
     auto &world = AngbandWorld::get_instance();
     world.play_time.pause();
     const auto unpauser = util::make_finalizer([&world]() { world.play_time.unpause(); });
@@ -58,16 +57,16 @@ void do_cmd_edit_autopick(PlayerType *player_ptr)
     init_autopick();
     if (autopick_last_destroyed_object.is_valid()) {
         autopick_entry_from_object(player_ptr, entry, &autopick_last_destroyed_object);
-        tb->last_destroyed = autopick_line_from_entry(*entry);
+        atb.last_destroyed = autopick_line_from_entry(*entry);
     }
 
     auto [filename_mode, lines] = read_pickpref_text_lines(player_ptr->base_name);
-    tb->filename_mode = filename_mode;
-    tb->set_lines(std::move(lines));
+    atb.filename_mode = filename_mode;
+    atb.set_lines(std::move(lines));
 
     // 前回閉じたときのカーソルの行が、読み込み直したファイルに無ければ先頭に戻す
-    if (!tb->has_line(tb->cy)) {
-        tb->cy = tb->cx = 0;
+    if (!atb.has_line(atb.cy)) {
+        atb.cy = atb.cx = 0;
     }
 
     TermCenteredOffsetSetter tcos(tl::nullopt, tl::nullopt);
@@ -75,55 +74,55 @@ void do_cmd_edit_autopick(PlayerType *player_ptr)
     screen_save();
     while (quit == APE_QUIT) {
         auto com_id = EditorCommandId::NONE;
-        tb->adjust_cursor_column();
-        draw_text_editor(player_ptr, tb);
+        atb.adjust_cursor_column();
+        draw_text_editor(player_ptr, atb);
         constexpr auto key_guide = _("(^Q:終了 ^W:セーブして終了, ESC:メニュー, その他:入力)", "(^Q:Quit, ^W:Save&Quit, ESC:Menu, Other:Input text)");
         prt(key_guide, 0, 0);
-        if (tb->marks.none()) {
-            prt(fmt::format("({},{})", tb->cx, tb->cy), 0, 60);
+        if (atb.marks.none()) {
+            prt(fmt::format("({},{})", atb.cx, atb.cy), 0, 60);
         } else {
-            prt(fmt::format("({},{})-({},{})", tb->mx, tb->my, tb->cx, tb->cy), 0, 60);
+            prt(fmt::format("({},{})-({},{})", atb.mx, atb.my, atb.cx, atb.cy), 0, 60);
         }
 
-        const auto cx_before = tb->cx;
-        const auto cursor_column = tb->get_cursor_column();
-        term_gotoxy(cursor_column - tb->left, tb->cy - tb->upper + 1);
-        tb->dirty_flags = 0;
-        tb->dirty_line = -1;
-        tb->old_cy = tb->cy;
-        tb->old_upper = tb->upper;
-        tb->old_left = tb->left;
-        tb->old_wid = tb->wid;
-        tb->old_hgt = tb->hgt;
+        const auto cx_before = atb.cx;
+        const auto cursor_column = atb.get_cursor_column();
+        term_gotoxy(cursor_column - atb.left, atb.cy - atb.upper + 1);
+        atb.dirty_flags = 0;
+        atb.dirty_line = -1;
+        atb.old_cy = atb.cy;
+        atb.old_upper = atb.upper;
+        atb.old_left = atb.left;
+        atb.old_wid = atb.wid;
+        atb.old_hgt = atb.hgt;
 
         key = input_special_key_with_context(InputKind::AUTOPICK_EDITOR, key_guide);
 
         if (key & SKEY_MASK) {
-            com_id = tb->analyze_move_key(static_cast<uint32_t>(key));
+            com_id = atb.analyze_move_key(static_cast<uint32_t>(key));
         } else if (key == ESCAPE) {
             com_id = do_command_menu(0, 0);
-            tb->dirty_flags |= DIRTY_SCREEN;
+            atb.dirty_flags |= DIRTY_SCREEN;
         } else if (!iscntrl((unsigned char)key)) {
-            tb->insert_single_letter(key);
+            atb.insert_single_letter(key);
         } else {
             com_id = CommandMenuData::get_instance().get_com_id((char)key);
         }
 
         if (com_id > EditorCommandId::NONE) {
-            quit = do_editor_command(player_ptr, tb, com_id);
+            quit = do_editor_command(player_ptr, atb, com_id);
         }
 
-        tb->update_cursor_column_record(com_id, cx_before, cursor_column);
+        atb.update_cursor_column_record(com_id, cx_before, cursor_column);
     }
 
     screen_load();
-    const auto filename = pickpref_filename(player_ptr->base_name, tb->filename_mode);
+    const auto filename = pickpref_filename(player_ptr->base_name, atb.filename_mode);
 
     if (quit == APE_QUIT_AND_SAVE) {
-        write_text_lines(filename, tb->get_entry_lines());
+        write_text_lines(filename, atb.get_entry_lines());
     }
 
     process_autopick_file(player_ptr, filename);
-    cx_save = tb->cx;
-    cy_save = tb->cy;
+    cx_save = atb.cx;
+    cy_save = atb.cy;
 }
