@@ -8,6 +8,7 @@
 #include "autopick/autopick-dirty-flags.h"
 #include "autopick/autopick-methods-table.h"
 #include "autopick/autopick-util.h"
+#include "io/input-key-acceptor.h"
 #include "test/string-helpers.h"
 
 #include <doctest/doctest.h>
@@ -15,6 +16,7 @@
 #include <initializer_list>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 using namespace test;
@@ -232,6 +234,111 @@ TEST_CASE("set_lines keeps an empty line when no lines are given")
 
     tb.set_lines({});
     CHECK(tb.get_entry_lines() == std::vector<std::string>{ "" });
+}
+
+TEST_CASE("analyze_move_key returns NONE for a key that is not a special key")
+{
+    auto tb = make_text_body({ "abcd" });
+    tb.marks.set(AutopickMark::MARK);
+
+    CHECK(tb.analyze_move_key('a') == EditorCommandId::NONE);
+    CHECK(tb.marks.has(AutopickMark::MARK));
+    CHECK(tb.dirty_flags == 0);
+}
+
+TEST_CASE("analyze_move_key returns NONE for an unknown special key")
+{
+    auto tb = make_text_body({ "abcd" });
+
+    CHECK(tb.analyze_move_key(SKEY_MASK) == EditorCommandId::NONE);
+    CHECK(tb.marks.none());
+}
+
+TEST_CASE("analyze_move_key maps cursor keys to movement commands")
+{
+    auto tb = make_text_body({ "abcd" });
+    const std::pair<uint32_t, EditorCommandId> keys[] = {
+        { SKEY_DOWN, EditorCommandId::DOWN },
+        { SKEY_LEFT, EditorCommandId::LEFT },
+        { SKEY_RIGHT, EditorCommandId::RIGHT },
+        { SKEY_UP, EditorCommandId::UP },
+        { SKEY_PGUP, EditorCommandId::PGUP },
+        { SKEY_PGDOWN, EditorCommandId::PGDOWN },
+        { SKEY_HOME, EditorCommandId::BOL },
+        { SKEY_HOME | SKEY_MOD_CONTROL, EditorCommandId::TOP },
+        { SKEY_END, EditorCommandId::EOL },
+        { SKEY_END | SKEY_MOD_CONTROL, EditorCommandId::BOTTOM },
+    };
+    for (const auto &[skey, com_id] : keys) {
+        CAPTURE(skey);
+        CHECK(tb.analyze_move_key(skey) == com_id);
+    }
+
+    CHECK(tb.marks.none());
+    CHECK(tb.dirty_flags == 0);
+}
+
+TEST_CASE("analyze_move_key clears a selection started with Shift")
+{
+    auto tb = make_text_body({ "abcd" });
+    tb.marks.set(AutopickMark::MARK);
+    tb.marks.set(AutopickMark::BY_SHIFT);
+    tb.my = 0;
+    tb.mx = 2;
+
+    CHECK(tb.analyze_move_key(SKEY_LEFT) == EditorCommandId::LEFT);
+    CHECK(tb.marks.none());
+    CHECK((tb.dirty_flags & DIRTY_ALL) != 0);
+    CHECK(tb.my == 0);
+    CHECK(tb.mx == 2);
+}
+
+TEST_CASE("analyze_move_key keeps a selection that was not started with Shift")
+{
+    auto tb = make_text_body({ "abcd" });
+    tb.marks.set(AutopickMark::MARK);
+
+    CHECK(tb.analyze_move_key(SKEY_LEFT) == EditorCommandId::LEFT);
+    CHECK(tb.marks.has(AutopickMark::MARK));
+    CHECK(tb.marks.has_not(AutopickMark::BY_SHIFT));
+    CHECK(tb.dirty_flags == 0);
+}
+
+TEST_CASE("analyze_move_key starts a selection from the cursor when Shift is held")
+{
+    auto tb = make_text_body_with_line("ab", 10);
+
+    CHECK(tb.analyze_move_key(SKEY_DOWN | SKEY_MOD_SHIFT) == EditorCommandId::DOWN);
+    CHECK(tb.marks.has(AutopickMark::MARK));
+    CHECK(tb.marks.has(AutopickMark::BY_SHIFT));
+    CHECK(tb.my == 0);
+    CHECK(tb.mx == 2);
+    CHECK(tb.cx == 10);
+    CHECK((tb.dirty_flags & DIRTY_ALL) != 0);
+}
+
+TEST_CASE("analyze_move_key records the current line when a horizontal Shift move starts a selection")
+{
+    auto tb = make_text_body_with_line("abcd", 1);
+
+    CHECK(tb.analyze_move_key(SKEY_RIGHT | SKEY_MOD_SHIFT) == EditorCommandId::RIGHT);
+    CHECK(tb.dirty_line == 0);
+    CHECK((tb.dirty_flags & DIRTY_ALL) == 0);
+    CHECK(tb.mx == 1);
+}
+
+TEST_CASE("analyze_move_key does not move the mark origin when a selection already exists")
+{
+    auto tb = make_text_body_with_line("abcd", 3);
+    tb.marks.set(AutopickMark::MARK);
+    tb.my = 0;
+    tb.mx = 1;
+
+    CHECK(tb.analyze_move_key(SKEY_RIGHT | SKEY_MOD_SHIFT) == EditorCommandId::RIGHT);
+    CHECK(tb.my == 0);
+    CHECK(tb.mx == 1);
+    CHECK(tb.dirty_flags == 0);
+    CHECK(tb.dirty_line == -1);
 }
 
 #ifdef JP

@@ -62,6 +62,8 @@ public:
     bool insert_keymap_line();
     void insert_single_letter(int key);
     void kill_line_segment(int y, int x0, int x1, bool whole);
+    void search_for_string(std::string_view pattern, bool forward);
+    EditorCommandId analyze_move_key(uint32_t skey);
 
     int cx;
     int cy;

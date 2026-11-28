@@ -413,7 +413,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         }
 
         if (!tb->search_str.empty()) {
-            search_for_string(tb, tb->search_str, true);
+            tb->search_for_string(tb->search_str, true);
             break;
         }
 
@@ -427,7 +427,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         }
 
         if (!tb->search_str.empty()) {
-            search_for_string(tb, tb->search_str, false);
+            tb->search_for_string(tb->search_str, false);
             break;
         }
 

@@ -19,85 +19,10 @@
 #include "system/item/item-entity.h"
 #include "system/player-type-definition.h"
 #include "term/screen-processor.h"
-#include "util/bit-flags-calculator.h"
 #include "util/finalizer.h"
 #include "util/int-char-converter.h"
 #include "world/world.h"
 #include <fmt/format.h>
-
-/*
- * Check special key code and get a movement command id
- */
-static EditorCommandId analyze_move_key(AutopickTextBody *tb, uint32_t skey)
-{
-    EditorCommandId com_id;
-    if (!(skey & SKEY_MASK)) {
-        return EditorCommandId::NONE;
-    }
-
-    switch (skey & ~SKEY_MOD_MASK) {
-    case SKEY_DOWN:
-        com_id = EditorCommandId::DOWN;
-        break;
-    case SKEY_LEFT:
-        com_id = EditorCommandId::LEFT;
-        break;
-    case SKEY_RIGHT:
-        com_id = EditorCommandId::RIGHT;
-        break;
-    case SKEY_UP:
-        com_id = EditorCommandId::UP;
-        break;
-    case SKEY_PGUP:
-        com_id = EditorCommandId::PGUP;
-        break;
-    case SKEY_PGDOWN:
-        com_id = EditorCommandId::PGDOWN;
-        break;
-    case SKEY_HOME:
-        com_id = any_bits(skey, SKEY_MOD_CONTROL) ? EditorCommandId::TOP : EditorCommandId::BOL;
-        break;
-    case SKEY_END:
-        com_id = any_bits(skey, SKEY_MOD_CONTROL) ? EditorCommandId::BOTTOM : EditorCommandId::EOL;
-        break;
-    default:
-        return EditorCommandId::NONE;
-    }
-
-    if (!(skey & SKEY_MOD_SHIFT)) {
-        /*
-         * Un-shifted cursor keys cancells
-         * selection created by shift+cursor.
-         */
-        if (tb->marks.has(AutopickMark::BY_SHIFT)) {
-            tb->marks.clear();
-            tb->dirty_flags |= DIRTY_ALL;
-        }
-
-        return com_id;
-    }
-
-    if (tb->marks.any()) {
-        return com_id;
-    }
-
-    const int len = tb->lines[tb->cy].line.length();
-    tb->marks.set(AutopickMark::MARK);
-    tb->marks.set(AutopickMark::BY_SHIFT);
-    tb->my = tb->cy;
-    tb->mx = tb->cx;
-    if (tb->cx > len) {
-        tb->mx = len;
-    }
-
-    if (com_id == EditorCommandId::UP || com_id == EditorCommandId::DOWN) {
-        tb->dirty_flags |= DIRTY_ALL;
-    } else {
-        tb->dirty_line = tb->cy;
-    }
-
-    return com_id;
-}
 
 /*
  * In-game editor of Object Auto-picker/Destoryer
@@ -174,7 +99,7 @@ void do_cmd_edit_autopick(PlayerType *player_ptr)
         key = input_special_key_with_context(InputKind::AUTOPICK_EDITOR, key_guide);
 
         if (key & SKEY_MASK) {
-            com_id = analyze_move_key(tb, static_cast<uint32_t>(key));
+            com_id = tb->analyze_move_key(static_cast<uint32_t>(key));
         } else if (key == ESCAPE) {
             com_id = do_command_menu(0, 0);
             tb->dirty_flags |= DIRTY_SCREEN;

@@ -10,6 +10,7 @@
 #include "locale/multibyte-char.h"
 #include "main/sound-of-music.h"
 #include "term/screen-processor.h"
+#include "util/bit-flags-calculator.h"
 #include "util/enum-converter.h"
 #include "util/string-processor.h"
 #include <algorithm>
@@ -618,4 +619,131 @@ void AutopickTextBody::kill_line_segment(int y, int x0, int x1, bool whole)
     this->lines[y].line = std::move(buf);
     this->check_expression_line(y);
     this->changed = true;
+}
+
+/*!
+ * @brief 文字列に一致する次または前の行へカーソルを動かす
+ * @param pattern 探す文字列
+ * @param forward 後ろへ探すなら true、前へ探すなら false
+ * @details カーソルのある行は探さない。条件式で飛ばされている行は、有効な一致が他に無いときだけ候補にする。
+ */
+void AutopickTextBody::search_for_string(std::string_view pattern, bool forward)
+{
+    int bypassed_cy = -1;
+    int bypassed_cx = 0;
+
+    int i = this->cy;
+    while (true) {
+        if (!this->has_line(forward ? ++i : --i)) {
+            break;
+        }
+
+        const auto line_data = this->lines[i].line.data();
+        const auto *pos = angband_strstr(line_data, pattern);
+        if (!pos) {
+            continue;
+        }
+
+        if ((this->lines[i].state.has(AutopickEntryStatus::BYPASS)) && this->lines[i].state.has_not(AutopickEntryStatus::EXPRESSION)) {
+            if (bypassed_cy == -1) {
+                bypassed_cy = i;
+                bypassed_cx = static_cast<int>(pos - line_data);
+            }
+
+            continue;
+        }
+
+        this->cx = static_cast<int>(pos - line_data);
+        this->cy = i;
+
+        if (bypassed_cy != -1) {
+            this->dirty_flags |= DIRTY_SKIP_INACTIVE;
+        }
+
+        return;
+    }
+
+    if (bypassed_cy == -1) {
+        this->dirty_flags |= DIRTY_NOT_FOUND;
+        return;
+    }
+
+    this->cx = bypassed_cx;
+    this->cy = bypassed_cy;
+    this->dirty_flags |= DIRTY_INACTIVE;
+}
+
+/*!
+ * @brief 特殊キーを移動コマンドに読み替える
+ * @param skey 特殊キー。修飾キーのフラグを含む
+ * @return 対応する移動コマンド。移動キーでなければ EditorCommandId::NONE
+ * @details Shift を押していない移動キーは、Shift で始めた選択を解除する。
+ * Shift を押した移動キーは、選択が無ければカーソルの位置から選択を始める。
+ */
+EditorCommandId AutopickTextBody::analyze_move_key(uint32_t skey)
+{
+    EditorCommandId com_id;
+    if (!(skey & SKEY_MASK)) {
+        return EditorCommandId::NONE;
+    }
+
+    switch (skey & ~SKEY_MOD_MASK) {
+    case SKEY_DOWN:
+        com_id = EditorCommandId::DOWN;
+        break;
+    case SKEY_LEFT:
+        com_id = EditorCommandId::LEFT;
+        break;
+    case SKEY_RIGHT:
+        com_id = EditorCommandId::RIGHT;
+        break;
+    case SKEY_UP:
+        com_id = EditorCommandId::UP;
+        break;
+    case SKEY_PGUP:
+        com_id = EditorCommandId::PGUP;
+        break;
+    case SKEY_PGDOWN:
+        com_id = EditorCommandId::PGDOWN;
+        break;
+    case SKEY_HOME:
+        com_id = any_bits(skey, SKEY_MOD_CONTROL) ? EditorCommandId::TOP : EditorCommandId::BOL;
+        break;
+    case SKEY_END:
+        com_id = any_bits(skey, SKEY_MOD_CONTROL) ? EditorCommandId::BOTTOM : EditorCommandId::EOL;
+        break;
+    default:
+        return EditorCommandId::NONE;
+    }
+
+    if (!(skey & SKEY_MOD_SHIFT)) {
+        // Shift を押していない移動キーは、Shift で始めた選択を解除する。
+        if (this->marks.has(AutopickMark::BY_SHIFT)) {
+            this->marks.clear();
+            this->dirty_flags |= DIRTY_ALL;
+        }
+
+        return com_id;
+    }
+
+    if (this->marks.any()) {
+        return com_id;
+    }
+
+    const int len = this->lines[this->cy].line.length();
+    this->marks.set(AutopickMark::MARK);
+    this->marks.set(AutopickMark::BY_SHIFT);
+    this->my = this->cy;
+    this->mx = this->cx;
+    if (this->cx > len) {
+        this->mx = len;
+    }
+
+    if (com_id == EditorCommandId::UP || com_id == EditorCommandId::DOWN) {
+        this->dirty_flags |= DIRTY_ALL;
+    } else {
+        this->dirty_line = this->cy;
+    }
+
+    return com_id;
 }
