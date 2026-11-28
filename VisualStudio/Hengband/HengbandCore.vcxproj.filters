@@ -2923,6 +2923,9 @@
     <ClCompile Include="..\..\src\view\status-first-page.cpp">
       <Filter>view</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\view\unique-monrace-lines.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\window\display-sub-windows.cpp">
       <Filter>window</Filter>
     </ClCompile>
@@ -6101,6 +6104,9 @@
       <Filter>view</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\view\status-first-page.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\view\unique-monrace-lines.h">
       <Filter>view</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\window\display-sub-windows.h">
