@@ -1,6 +1,8 @@
 #include "autopick/autopick-text-body.h"
 #include "autopick/autopick-commands-table.h"
-#include "autopick/autopick-editor-util.h"
+#include "autopick/autopick-dirty-flags.h"
+#include "autopick/autopick-entry.h"
+#include "autopick/autopick-flags-table.h"
 #include "locale/multibyte-char.h"
 #include <algorithm>
 #include <iterator>
@@ -91,6 +93,24 @@ int AutopickTextBody::get_cursor_column() const
 }
 
 /*!
+ * @brief 行の指定の位置が多バイト文字の途中 (先頭バイトより後ろ) かどうかを判定する
+ * @param line 行
+ * @param pos 位置 (バイト)
+ * @return pos より前から多バイト文字が始まり、pos がその文字の後続のバイトであれば true
+ * @details
+ * 行末に後続のバイトが欠けた文字が残っている場合、その直後 (行の長さの位置) は文字の途中とみなさない。
+ * 英語版では常に false を返す。
+ */
+bool AutopickTextBody::is_inside_multibyte_char(std::string_view line, int pos)
+{
+    if ((pos <= 0) || std::cmp_greater_equal(pos, line.length())) {
+        return false;
+    }
+
+    return !is_mb_char_boundary(line, pos);
+}
+
+/*!
  * @brief カーソルが多バイト文字の途中にあるかどうかを判定する
  * @return カーソルのある行で、カーソルの位置が多バイト文字の後続のバイトであれば true
  */
@@ -140,4 +160,279 @@ void AutopickTextBody::set_lines(std::vector<std::string> new_lines)
 std::vector<std::string> AutopickTextBody::get_entry_lines() const
 {
     return this->lines | std::views::transform(&AutopickEntryLine::line) | std::ranges::to<std::vector>();
+}
+
+/*!
+ * @brief キーワードを付けるか外す
+ * @param flg 切り替えるキーワード
+ * @details マークが無ければカーソル行だけを、あればマークからカーソルまでの行を対象にする。
+ * 付けるか外すかは、最初に解釈できた行がそのキーワードを持っているかで決める。
+ */
+void AutopickTextBody::toggle_keyword(BIT_FLAGS flg)
+{
+    int by1, by2;
+    bool add = true;
+    bool fixed = false;
+    if (this->marks.any()) {
+        by1 = std::min(this->my, this->cy);
+        by2 = std::max(this->my, this->cy);
+    } else {
+        by1 = by2 = this->cy;
+    }
+
+    for (int y = by1; y <= by2; y++) {
+        autopick_type an_entry, *entry = &an_entry;
+        if (!autopick_new_entry(entry, this->lines[y].line, !fixed)) {
+            continue;
+        }
+
+        if (!fixed) {
+            if (!entry->has(flg)) {
+                add = true;
+            } else {
+                add = false;
+            }
+
+            fixed = true;
+        }
+
+        if (FLG_NOUN_BEGIN <= flg && flg <= FLG_NOUN_END) {
+            int i;
+            for (i = FLG_NOUN_BEGIN; i <= FLG_NOUN_END; i++) {
+                entry->remove(i);
+            }
+        } else if (FLG_UNAWARE <= flg && flg <= FLG_STAR_IDENTIFIED) {
+            int i;
+            for (i = FLG_UNAWARE; i <= FLG_STAR_IDENTIFIED; i++) {
+                entry->remove(i);
+            }
+        } else if (FLG_ARTIFACT <= flg && flg <= FLG_AVERAGE) {
+            int i;
+            for (i = FLG_ARTIFACT; i <= FLG_AVERAGE; i++) {
+                entry->remove(i);
+            }
+        } else if (FLG_RARE <= flg && flg <= FLG_COMMON) {
+            int i;
+            for (i = FLG_RARE; i <= FLG_COMMON; i++) {
+                entry->remove(i);
+            }
+        }
+
+        if (add) {
+            entry->add(flg);
+        } else {
+            entry->remove(flg);
+        }
+
+        this->lines[y].line = autopick_line_from_entry(*entry);
+        this->dirty_flags |= DIRTY_ALL;
+        this->changed = true;
+    }
+}
+
+/*!
+ * @brief コマンド文字を切り替える
+ * @param am 切り替える動作
+ * @details マークが無ければカーソル行だけを、あればマークからカーソルまでの行を対象にする。
+ * 付けるか外すかは、最初に解釈できた行がその動作を持っているかで決める。
+ * カーソル行では、行頭のコマンド文字の増減に合わせてカーソルを動かす。
+ */
+void AutopickTextBody::toggle_command_letter(AutopickMethod am)
+{
+    autopick_type an_entry;
+    autopick_type *entry = &an_entry;
+    int by1, by2;
+    bool add = true;
+    bool fixed = false;
+    if (this->marks.any()) {
+        by1 = std::min(this->my, this->cy);
+        by2 = std::max(this->my, this->cy);
+    } else {
+        by1 = by2 = this->cy;
+    }
+
+    for (int y = by1; y <= by2; y++) {
+        // メンバーの wid (画面幅) を隠さない。コマンド文字の増減によるカーソルの移動量。
+        auto width_diff = 0;
+        if (!autopick_new_entry(entry, this->lines[y].line, false)) {
+            continue;
+        }
+
+        if (!fixed) {
+            add = entry->action.has_not(am);
+            fixed = true;
+        }
+
+        if (entry->action.has(AutopickMethod::NOT_AUTOPICK)) {
+            width_diff--;
+        } else if (entry->action.has(AutopickMethod::AUTODESTROY)) {
+            width_diff--;
+        } else if (entry->action.has(AutopickMethod::QUERY_AUTOPICK)) {
+            width_diff--;
+        }
+
+        if (entry->action.has_not(AutopickMethod::DISPLAY)) {
+            width_diff--;
+        }
+
+        if (am != AutopickMethod::DISPLAY) {
+            entry->action.reset({ AutopickMethod::AUTOPICK, AutopickMethod::NOT_AUTOPICK, AutopickMethod::AUTODESTROY, AutopickMethod::QUERY_AUTOPICK });
+            entry->action.set(add ? am : AutopickMethod::AUTOPICK);
+        } else {
+            entry->action.reset(AutopickMethod::DISPLAY);
+            if (add) {
+                entry->action.set(am);
+            }
+        }
+
+        if (this->cy == y) {
+            if (entry->action.has(AutopickMethod::NOT_AUTOPICK)) {
+                width_diff++;
+            } else if (entry->action.has(AutopickMethod::AUTODESTROY)) {
+                width_diff++;
+            } else if (entry->action.has(AutopickMethod::QUERY_AUTOPICK)) {
+                width_diff++;
+            }
+
+            if (entry->action.has_not(AutopickMethod::DISPLAY)) {
+                width_diff++;
+            }
+
+            if (width_diff > 0) {
+                this->cx++;
+            }
+
+            if (width_diff < 0 && this->cx > 0) {
+                this->cx--;
+            }
+        }
+
+        this->lines[y].line = autopick_line_from_entry(*entry);
+        this->dirty_flags |= DIRTY_ALL;
+        this->changed = true;
+    }
+}
+
+/*!
+ * @brief キーワードを足す
+ * @param flg 足すキーワード
+ * @details 既にそのキーワードを持つ行は変えない。名詞のキーワードは、他の名詞を外してから足す。
+ */
+void AutopickTextBody::add_keyword(BIT_FLAGS flg)
+{
+    int by1, by2;
+    if (this->marks.any()) {
+        by1 = std::min(this->my, this->cy);
+        by2 = std::max(this->my, this->cy);
+    } else {
+        by1 = by2 = this->cy;
+    }
+
+    for (int y = by1; y <= by2; y++) {
+        autopick_type an_entry, *entry = &an_entry;
+        if (!autopick_new_entry(entry, this->lines[y].line, false)) {
+            continue;
+        }
+
+        if (entry->has(flg)) {
+            continue;
+        }
+
+        if (FLG_NOUN_BEGIN <= flg && flg <= FLG_NOUN_END) {
+            int i;
+            for (i = FLG_NOUN_BEGIN; i <= FLG_NOUN_END; i++) {
+                entry->remove(i);
+            }
+        }
+
+        entry->add(flg);
+        this->lines[y].line = autopick_line_from_entry(*entry);
+        this->dirty_flags |= DIRTY_ALL;
+        this->changed = true;
+    }
+}
+
+/*!
+ * @brief ファイルの末尾に空行を足す
+ * @return 空行を足した場合 true、最終行が既に空の場合は false
+ */
+bool AutopickTextBody::add_empty_line()
+{
+    if (this->lines.back().line.empty()) {
+        return false;
+    }
+
+    this->lines.emplace_back();
+    this->dirty_flags |= DIRTY_EXPRESSION;
+    this->changed = true;
+    return true;
+}
+
+/*!
+ * @brief ヤンクバッファを空にする
+ */
+void AutopickTextBody::kill_yank_chain()
+{
+    this->yank.clear();
+    this->yank_eol = true;
+}
+
+/*!
+ * @brief ヤンクバッファに文字列を足す
+ * @param str 足す文字列
+ */
+void AutopickTextBody::add_str_to_yank(std::string_view str)
+{
+    this->yank_eol = false;
+    this->yank.emplace_back(str);
+}
+
+/*!
+ * @brief 選択範囲をヤンクバッファへコピーする
+ * @details マークが無ければ、カーソル行の全体をコピーする。
+ */
+void AutopickTextBody::copy_text_to_yank()
+{
+    const int len = this->lines[this->cy].line.length();
+    if (this->cx > len) {
+        this->cx = len;
+    }
+
+    if (this->marks.none()) {
+        this->cx = 0;
+        this->my = this->cy;
+        this->mx = len;
+    }
+
+    this->kill_yank_chain();
+    if (this->my != this->cy) {
+        int by1 = std::min(this->my, this->cy);
+        int by2 = std::max(this->my, this->cy);
+
+        for (int y = by1; y <= by2; y++) {
+            this->add_str_to_yank(this->lines[y].line);
+        }
+
+        this->add_str_to_yank("");
+        this->marks.clear();
+        this->dirty_flags |= DIRTY_ALL;
+        return;
+    }
+
+    const auto bx1 = std::min(this->mx, this->cx);
+    auto bx2 = std::max(this->mx, this->cx);
+    if (bx2 > len) {
+        bx2 = len;
+    }
+
+    if ((bx1 == 0) && (bx2 == len)) {
+        this->add_str_to_yank(this->lines[this->cy].line);
+        this->add_str_to_yank("");
+    } else {
+        const std::string_view buf(this->lines[this->cy].line);
+        this->add_str_to_yank(buf.substr(bx1, bx2 - bx1));
+    }
+
+    this->marks.clear();
+    this->dirty_flags |= DIRTY_ALL;
 }

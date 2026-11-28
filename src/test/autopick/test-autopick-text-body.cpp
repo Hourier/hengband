@@ -5,7 +5,7 @@
 #include "autopick/autopick-text-body.h"
 
 #include "autopick/autopick-commands-table.h"
-#include "autopick/autopick-editor-util.h"
+#include "autopick/autopick-dirty-flags.h"
 #include "autopick/autopick-methods-table.h"
 #include "test/string-helpers.h"
 
@@ -42,6 +42,9 @@ AutopickTextBody make_text_body_with_line(std::string_view line, int cx)
     tb.cx = cx;
     return tb;
 }
+
+//! 行末に多バイト文字の先頭バイトだけが残った行
+const std::string LINE_WITH_LONE_LEAD_BYTE = cat("ab", KANJI_KAN.substr(0, 1));
 #endif
 
 }
@@ -78,7 +81,7 @@ TEST_CASE("adjust_cursor_column keeps the mark column within the line shortened 
     tb.cx = 5;
     tb.marks.set(AutopickMark::MARK);
     tb.mx = 5;
-    toggle_command_letter(&tb, AutopickMethod::AUTOPICK);
+    tb.toggle_command_letter(AutopickMethod::AUTOPICK);
     REQUIRE(tb.lines[0].line == "aaaa");
 
     tb.adjust_cursor_column();
@@ -122,6 +125,46 @@ TEST_CASE("update_cursor_column_record records the column after the command when
     CHECK(tb.rec_cx == 0);
 }
 
+TEST_CASE("add_empty_line appends an empty line")
+{
+    auto tb = make_text_body({ "a" });
+
+    CHECK(tb.add_empty_line());
+    REQUIRE(tb.lines.size() == 2);
+    CHECK(tb.lines[1].line.empty());
+    CHECK((tb.dirty_flags & DIRTY_EXPRESSION) != 0);
+    CHECK(tb.changed);
+}
+
+TEST_CASE("add_empty_line appends an empty line to many lines")
+{
+    // 以前の行数の上限 (5998 行) を超える行数
+    constexpr auto many_lines = 7000;
+    AutopickTextBody tb(0, 0);
+    tb.set_lines(std::vector<std::string>(many_lines, "a"));
+
+    CHECK(tb.add_empty_line());
+    REQUIRE(tb.lines.size() == many_lines + 1);
+    CHECK(tb.lines[many_lines].line.empty());
+}
+
+TEST_CASE("add_empty_line does not append a line when the last line is empty")
+{
+    auto tb = make_text_body({ "" });
+
+    CHECK_FALSE(tb.add_empty_line());
+    CHECK(tb.lines.size() == 1);
+    CHECK_FALSE(tb.changed);
+}
+
+TEST_CASE("is_inside_multibyte_char is false for single-byte characters")
+{
+    for (auto pos = 0; pos <= 3; pos++) {
+        CAPTURE(pos);
+        CHECK_FALSE(AutopickTextBody::is_inside_multibyte_char("abc", pos));
+    }
+}
+
 TEST_CASE("set_lines replaces all the lines")
 {
     auto tb = make_text_body({ "aa", "bb", "cc" });
@@ -139,6 +182,20 @@ TEST_CASE("set_lines keeps an empty line when no lines are given")
 }
 
 #ifdef JP
+TEST_CASE("is_inside_multibyte_char detects a trailing byte of a multibyte character")
+{
+    const auto line = cat(KANJI_KAN, "a");
+
+    CHECK_FALSE(AutopickTextBody::is_inside_multibyte_char(line, 0));
+    CHECK(AutopickTextBody::is_inside_multibyte_char(line, 1));
+    CHECK_FALSE(AutopickTextBody::is_inside_multibyte_char(line, static_cast<int>(KANJI_KAN.length())));
+}
+
+TEST_CASE("is_inside_multibyte_char does not treat the end of a line after a lone lead byte as inside a character")
+{
+    CHECK_FALSE(AutopickTextBody::is_inside_multibyte_char(LINE_WITH_LONE_LEAD_BYTE, 3));
+}
+
 TEST_CASE("is_cursor_inside_multibyte_char checks the cursor position on the cursor line")
 {
     const auto line = cat(KANJI_KAN, "a");

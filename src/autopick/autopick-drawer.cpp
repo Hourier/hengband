@@ -7,7 +7,6 @@
 #include "autopick/autopick-drawer.h"
 #include "autopick/autopick-describer.h"
 #include "autopick/autopick-dirty-flags.h"
-#include "autopick/autopick-editor-util.h"
 #include "autopick/autopick-entry.h"
 #include "autopick/autopick-text-body.h"
 #include "autopick/autopick-util.h"

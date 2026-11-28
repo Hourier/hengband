@@ -381,9 +381,6 @@
     <ClCompile Include="..\..\src\autopick\autopick-editor-command.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\autopick\autopick-editor-util.cpp">
-      <Filter>autopick</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\autopick\autopick-entry.cpp">
       <Filter>autopick</Filter>
     </ClCompile>
@@ -3097,9 +3094,6 @@
       <Filter>autopick</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\autopick\autopick-editor-command.h">
-      <Filter>autopick</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\autopick\autopick-editor-util.h">
       <Filter>autopick</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\autopick\autopick-entry.h">

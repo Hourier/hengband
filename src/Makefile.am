@@ -64,7 +64,6 @@ libhengband_a_SOURCES = \
 	autopick/autopick-inserter-killer.cpp autopick/autopick-inserter-killer.h \
 	autopick/autopick-registry.cpp autopick/autopick-registry.h \
 	autopick/autopick-command-menu.cpp autopick/autopick-command-menu.h \
-	autopick/autopick-editor-util.cpp autopick/autopick-editor-util.h \
 	autopick/autopick-editor-command.cpp autopick/autopick-editor-command.h \
 	\
 	avatar/avatar.h avatar/avatar.cpp \

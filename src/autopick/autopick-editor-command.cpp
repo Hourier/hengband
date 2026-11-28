@@ -9,7 +9,6 @@
 #include "autopick/autopick-commands-table.h"
 #include "autopick/autopick-dirty-flags.h"
 #include "autopick/autopick-drawer.h"
-#include "autopick/autopick-editor-util.h"
 #include "autopick/autopick-entry.h"
 #include "autopick/autopick-finder.h"
 #include "autopick/autopick-flags-table.h"
@@ -108,7 +107,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
     }
     case EditorCommandId::DOWN: {
         if (tb->is_last_line(tb->cy)) {
-            if (!add_empty_line(tb)) {
+            if (!tb->add_empty_line()) {
                 break;
             }
         }
@@ -128,7 +127,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         if (len < tb->cx) {
             tb->cx = len;
             if (tb->is_last_line(tb->cy)) {
-                if (!add_empty_line(tb)) {
+                if (!tb->add_empty_line()) {
                     break;
                 }
             }
@@ -158,7 +157,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
     case EditorCommandId::PGDOWN:
         while (tb->cy < tb->upper + tb->hgt) {
             if (tb->is_last_line(tb->cy)) {
-                if (!add_empty_line(tb)) {
+                if (!tb->add_empty_line()) {
                     break;
                 }
             }
@@ -172,12 +171,12 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         tb->cy = 0;
         break;
     case EditorCommandId::BOTTOM:
-        add_empty_line(tb);
+        tb->add_empty_line();
         tb->cy = static_cast<int>(tb->lines.size()) - 1;
         tb->cx = 0;
         break;
     case EditorCommandId::CUT: {
-        copy_text_to_yank(tb);
+        tb->copy_text_to_yank();
         if (tb->my == tb->cy) {
             const auto bx1 = std::min(tb->mx, tb->cx);
             auto bx2 = std::max(tb->mx, tb->cx);
@@ -206,7 +205,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         break;
     }
     case EditorCommandId::COPY: {
-        copy_text_to_yank(tb);
+        tb->copy_text_to_yank();
 
         /*
          * Move cursor position to the end of the selection
@@ -216,7 +215,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         if (tb->my != tb->cy) {
             tb->cy = std::max(tb->cy, tb->my);
             if (tb->is_last_line(tb->cy)) {
-                if (!add_empty_line(tb)) {
+                if (!tb->add_empty_line()) {
                     break;
                 }
             }
@@ -228,7 +227,7 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         tb->cx = std::max(tb->cx, tb->mx);
         if (tb->lines[tb->cy].line[tb->cx] == '\0') {
             if (tb->is_last_line(tb->cy)) {
-                if (!add_empty_line(tb)) {
+                if (!tb->add_empty_line()) {
                     break;
                 }
             }
@@ -319,18 +318,18 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         }
 
         if (tb->old_com_id != com_id) {
-            kill_yank_chain(tb);
+            tb->kill_yank_chain();
         }
 
         if (tb->cx < len) {
-            add_str_to_yank(tb, &(tb->lines[tb->cy].line[tb->cx]));
+            tb->add_str_to_yank(&(tb->lines[tb->cy].line[tb->cx]));
             kill_line_segment(tb, tb->cy, tb->cx, len, false);
             tb->dirty_line = tb->cy;
             break;
         }
 
         if (tb->yank_eol) {
-            add_str_to_yank(tb, "");
+            tb->add_str_to_yank("");
         }
 
         tb->yank_eol = true;
@@ -527,158 +526,158 @@ ape_quittance do_editor_command(PlayerType *player_ptr, AutopickTextBody *tb, Ed
         break;
     }
     case EditorCommandId::CL_AUTOPICK:
-        toggle_command_letter(tb, AutopickMethod::AUTOPICK);
+        tb->toggle_command_letter(AutopickMethod::AUTOPICK);
         break;
     case EditorCommandId::CL_DESTROY:
-        toggle_command_letter(tb, AutopickMethod::AUTODESTROY);
+        tb->toggle_command_letter(AutopickMethod::AUTODESTROY);
         break;
     case EditorCommandId::CL_LEAVE:
-        toggle_command_letter(tb, AutopickMethod::NOT_AUTOPICK);
+        tb->toggle_command_letter(AutopickMethod::NOT_AUTOPICK);
         break;
     case EditorCommandId::CL_QUERY:
-        toggle_command_letter(tb, AutopickMethod::QUERY_AUTOPICK);
+        tb->toggle_command_letter(AutopickMethod::QUERY_AUTOPICK);
         break;
     case EditorCommandId::CL_NO_DISP:
-        toggle_command_letter(tb, AutopickMethod::DISPLAY);
+        tb->toggle_command_letter(AutopickMethod::DISPLAY);
         break;
     case EditorCommandId::IK_UNAWARE:
-        toggle_keyword(tb, FLG_UNAWARE);
+        tb->toggle_keyword(FLG_UNAWARE);
         break;
     case EditorCommandId::IK_UNIDENTIFIED:
-        toggle_keyword(tb, FLG_UNIDENTIFIED);
+        tb->toggle_keyword(FLG_UNIDENTIFIED);
         break;
     case EditorCommandId::IK_IDENTIFIED:
-        toggle_keyword(tb, FLG_IDENTIFIED);
+        tb->toggle_keyword(FLG_IDENTIFIED);
         break;
     case EditorCommandId::IK_STAR_IDENTIFIED:
-        toggle_keyword(tb, FLG_STAR_IDENTIFIED);
+        tb->toggle_keyword(FLG_STAR_IDENTIFIED);
         break;
     case EditorCommandId::KK_WEAPONS:
-        toggle_keyword(tb, FLG_WEAPONS);
+        tb->toggle_keyword(FLG_WEAPONS);
         break;
     case EditorCommandId::KK_FAVORITE_WEAPONS:
-        toggle_keyword(tb, FLG_FAVORITE_WEAPONS);
+        tb->toggle_keyword(FLG_FAVORITE_WEAPONS);
         break;
     case EditorCommandId::KK_ARMORS:
-        toggle_keyword(tb, FLG_ARMORS);
+        tb->toggle_keyword(FLG_ARMORS);
         break;
     case EditorCommandId::KK_MISSILES:
-        toggle_keyword(tb, FLG_MISSILES);
+        tb->toggle_keyword(FLG_MISSILES);
         break;
     case EditorCommandId::KK_DEVICES:
-        toggle_keyword(tb, FLG_DEVICES);
+        tb->toggle_keyword(FLG_DEVICES);
         break;
     case EditorCommandId::KK_LIGHTS:
-        toggle_keyword(tb, FLG_LIGHTS);
+        tb->toggle_keyword(FLG_LIGHTS);
         break;
     case EditorCommandId::KK_JUNKS:
-        toggle_keyword(tb, FLG_JUNKS);
+        tb->toggle_keyword(FLG_JUNKS);
         break;
     case EditorCommandId::KK_CORPSES:
-        toggle_keyword(tb, FLG_CORPSES);
+        tb->toggle_keyword(FLG_CORPSES);
         break;
     case EditorCommandId::KK_SPELLBOOKS:
-        toggle_keyword(tb, FLG_SPELLBOOKS);
+        tb->toggle_keyword(FLG_SPELLBOOKS);
         break;
     case EditorCommandId::KK_SHIELDS:
-        toggle_keyword(tb, FLG_SHIELDS);
+        tb->toggle_keyword(FLG_SHIELDS);
         break;
     case EditorCommandId::KK_BOWS:
-        toggle_keyword(tb, FLG_BOWS);
+        tb->toggle_keyword(FLG_BOWS);
         break;
     case EditorCommandId::KK_RINGS:
-        toggle_keyword(tb, FLG_RINGS);
+        tb->toggle_keyword(FLG_RINGS);
         break;
     case EditorCommandId::KK_AMULETS:
-        toggle_keyword(tb, FLG_AMULETS);
+        tb->toggle_keyword(FLG_AMULETS);
         break;
     case EditorCommandId::KK_SUITS:
-        toggle_keyword(tb, FLG_SUITS);
+        tb->toggle_keyword(FLG_SUITS);
         break;
     case EditorCommandId::KK_CLOAKS:
-        toggle_keyword(tb, FLG_CLOAKS);
+        tb->toggle_keyword(FLG_CLOAKS);
         break;
     case EditorCommandId::KK_HELMS:
-        toggle_keyword(tb, FLG_HELMS);
+        tb->toggle_keyword(FLG_HELMS);
         break;
     case EditorCommandId::KK_GLOVES:
-        toggle_keyword(tb, FLG_GLOVES);
+        tb->toggle_keyword(FLG_GLOVES);
         break;
     case EditorCommandId::KK_BOOTS:
-        toggle_keyword(tb, FLG_BOOTS);
+        tb->toggle_keyword(FLG_BOOTS);
         break;
     case EditorCommandId::OK_COLLECTING:
-        toggle_keyword(tb, FLG_COLLECTING);
+        tb->toggle_keyword(FLG_COLLECTING);
         break;
     case EditorCommandId::OK_BOOSTED:
-        toggle_keyword(tb, FLG_BOOSTED);
+        tb->toggle_keyword(FLG_BOOSTED);
         break;
     case EditorCommandId::OK_MORE_DICE:
-        toggle_keyword(tb, FLG_MORE_DICE);
+        tb->toggle_keyword(FLG_MORE_DICE);
         break;
     case EditorCommandId::OK_MORE_BONUS:
-        toggle_keyword(tb, FLG_MORE_BONUS);
+        tb->toggle_keyword(FLG_MORE_BONUS);
         break;
     case EditorCommandId::OK_WORTHLESS:
-        toggle_keyword(tb, FLG_WORTHLESS);
+        tb->toggle_keyword(FLG_WORTHLESS);
         break;
     case EditorCommandId::OK_ARTIFACT:
-        toggle_keyword(tb, FLG_ARTIFACT);
+        tb->toggle_keyword(FLG_ARTIFACT);
         break;
     case EditorCommandId::OK_EGO:
-        toggle_keyword(tb, FLG_EGO);
+        tb->toggle_keyword(FLG_EGO);
         break;
     case EditorCommandId::OK_GOOD:
-        toggle_keyword(tb, FLG_GOOD);
+        tb->toggle_keyword(FLG_GOOD);
         break;
     case EditorCommandId::OK_NAMELESS:
-        toggle_keyword(tb, FLG_NAMELESS);
+        tb->toggle_keyword(FLG_NAMELESS);
         break;
     case EditorCommandId::OK_AVERAGE:
-        toggle_keyword(tb, FLG_AVERAGE);
+        tb->toggle_keyword(FLG_AVERAGE);
         break;
     case EditorCommandId::OK_RARE:
-        toggle_keyword(tb, FLG_RARE);
+        tb->toggle_keyword(FLG_RARE);
         break;
     case EditorCommandId::OK_COMMON:
-        toggle_keyword(tb, FLG_COMMON);
+        tb->toggle_keyword(FLG_COMMON);
         break;
     case EditorCommandId::OK_WANTED:
-        toggle_keyword(tb, FLG_WANTED);
+        tb->toggle_keyword(FLG_WANTED);
         break;
     case EditorCommandId::OK_UNIQUE:
-        toggle_keyword(tb, FLG_UNIQUE);
+        tb->toggle_keyword(FLG_UNIQUE);
         break;
     case EditorCommandId::OK_HUMAN:
-        toggle_keyword(tb, FLG_HUMAN);
+        tb->toggle_keyword(FLG_HUMAN);
         break;
     case EditorCommandId::OK_UNREADABLE:
-        toggle_keyword(tb, FLG_UNREADABLE);
-        add_keyword(tb, FLG_SPELLBOOKS);
+        tb->toggle_keyword(FLG_UNREADABLE);
+        tb->add_keyword(FLG_SPELLBOOKS);
         break;
     case EditorCommandId::OK_REALM1:
-        toggle_keyword(tb, FLG_REALM1);
-        add_keyword(tb, FLG_SPELLBOOKS);
+        tb->toggle_keyword(FLG_REALM1);
+        tb->add_keyword(FLG_SPELLBOOKS);
         break;
     case EditorCommandId::OK_REALM2:
-        toggle_keyword(tb, FLG_REALM2);
-        add_keyword(tb, FLG_SPELLBOOKS);
+        tb->toggle_keyword(FLG_REALM2);
+        tb->add_keyword(FLG_SPELLBOOKS);
         break;
     case EditorCommandId::OK_FIRST:
-        toggle_keyword(tb, FLG_FIRST);
-        add_keyword(tb, FLG_SPELLBOOKS);
+        tb->toggle_keyword(FLG_FIRST);
+        tb->add_keyword(FLG_SPELLBOOKS);
         break;
     case EditorCommandId::OK_SECOND:
-        toggle_keyword(tb, FLG_SECOND);
-        add_keyword(tb, FLG_SPELLBOOKS);
+        tb->toggle_keyword(FLG_SECOND);
+        tb->add_keyword(FLG_SPELLBOOKS);
         break;
     case EditorCommandId::OK_THIRD:
-        toggle_keyword(tb, FLG_THIRD);
-        add_keyword(tb, FLG_SPELLBOOKS);
+        tb->toggle_keyword(FLG_THIRD);
+        tb->add_keyword(FLG_SPELLBOOKS);
         break;
     case EditorCommandId::OK_FOURTH:
-        toggle_keyword(tb, FLG_FOURTH);
-        add_keyword(tb, FLG_SPELLBOOKS);
+        tb->toggle_keyword(FLG_FOURTH);
+        tb->add_keyword(FLG_SPELLBOOKS);
         break;
     default:
         break;

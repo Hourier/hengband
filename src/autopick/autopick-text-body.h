@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 enum class EditorCommandId;
@@ -43,10 +44,18 @@ public:
     void adjust_cursor_column();
     void update_cursor_column_record(EditorCommandId com_id, int cx_before, int column_before);
     bool is_cursor_inside_multibyte_char() const;
+    static bool is_inside_multibyte_char(std::string_view line, int pos);
     int get_cursor_column() const;
     bool has_line(int y) const;
     bool is_last_line(int y) const;
     void set_lines(std::vector<std::string> new_lines);
+    void toggle_keyword(BIT_FLAGS flg);
+    void toggle_command_letter(AutopickMethod am);
+    void add_keyword(BIT_FLAGS flg);
+    bool add_empty_line();
+    void kill_yank_chain();
+    void add_str_to_yank(std::string_view str);
+    void copy_text_to_yank();
 
     int cx;
     int cy;

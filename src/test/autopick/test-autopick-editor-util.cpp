@@ -2,11 +2,9 @@
  * @brief 自動拾いエディタの編集操作のテスト
  */
 
-#include "autopick/autopick-editor-util.h"
+#include "autopick/autopick-editor-command.h"
 
 #include "autopick/autopick-commands-table.h"
-#include "autopick/autopick-dirty-flags.h"
-#include "autopick/autopick-editor-command.h"
 #include "autopick/autopick-inserter-killer.h"
 #include "autopick/autopick-text-body.h"
 #include "autopick/autopick-util.h"
@@ -59,44 +57,6 @@ AutopickTextBody make_text_body_with_line(std::string_view line, int cx)
 const std::string LINE_WITH_LONE_LEAD_BYTE = cat("ab", KANJI_KAN.substr(0, 1));
 #endif
 
-}
-
-TEST_CASE("add_empty_line appends an empty line")
-{
-    auto tb = make_text_body(1);
-
-    CHECK(add_empty_line(&tb));
-    REQUIRE(tb.lines.size() == 2);
-    CHECK(tb.lines[1].line.empty());
-    CHECK((tb.dirty_flags & DIRTY_EXPRESSION) != 0);
-    CHECK(tb.changed);
-}
-
-TEST_CASE("add_empty_line appends an empty line to many lines")
-{
-    auto tb = make_text_body(MANY_LINES);
-
-    CHECK(add_empty_line(&tb));
-    REQUIRE(tb.lines.size() == MANY_LINES + 1);
-    CHECK(tb.lines[MANY_LINES].line.empty());
-}
-
-TEST_CASE("add_empty_line does not append a line when the last line is empty")
-{
-    auto tb = make_text_body(1);
-    tb.lines[0].line = "";
-
-    CHECK_FALSE(add_empty_line(&tb));
-    CHECK(tb.lines.size() == 1);
-    CHECK_FALSE(tb.changed);
-}
-
-TEST_CASE("is_inside_multibyte_char is false for single-byte characters")
-{
-    for (auto pos = 0; pos <= 3; pos++) {
-        CAPTURE(pos);
-        CHECK_FALSE(is_inside_multibyte_char("abc", pos));
-    }
 }
 
 TEST_CASE("insert_return_code splits the line at the cursor")
@@ -277,20 +237,6 @@ TEST_CASE("auto_inscribe_item sets inscription when empty and returns true")
 }
 
 #ifdef JP
-TEST_CASE("is_inside_multibyte_char detects a trailing byte of a multibyte character")
-{
-    const auto line = cat(KANJI_KAN, "a");
-
-    CHECK_FALSE(is_inside_multibyte_char(line, 0));
-    CHECK(is_inside_multibyte_char(line, 1));
-    CHECK_FALSE(is_inside_multibyte_char(line, static_cast<int>(KANJI_KAN.length())));
-}
-
-TEST_CASE("is_inside_multibyte_char does not treat the end of a line after a lone lead byte as inside a character")
-{
-    CHECK_FALSE(is_inside_multibyte_char(LINE_WITH_LONE_LEAD_BYTE, 3));
-}
-
 TEST_CASE("insert_return_code does not split a double-byte character")
 {
     auto tb = make_text_body_with_line(cat(KANJI_KAN, KANJI_JI), 1);
