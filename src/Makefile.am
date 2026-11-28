@@ -1144,6 +1144,7 @@ libhengband_a_SOURCES = \
 	view/object-describer.cpp view/object-describer.h \
 	view/status-first-page.cpp view/status-first-page.h \
 	view/status-bars-table.cpp view/status-bars-table.h \
+	view/unique-monrace-lines.cpp view/unique-monrace-lines.h \
 	\
 	window/display-sub-windows.cpp window/display-sub-windows.h \
 	window/main-window-left-frame.cpp window/main-window-left-frame.h \
@@ -1362,6 +1363,7 @@ hengband_test_SOURCES = \
 	test/view/test-original-tiles.cpp test/view/original-terrain-coverage.inc test/view/original-item-coverage.inc test/view/original-monster-coverage.inc test/view/original-symbol-coverage.inc \
 	test/view/test-map-terrain-visibility.cpp \
 	test/view/test-screen-parity-helpers.cpp \
+	test/view/test-unique-monrace-lines.cpp \
 	test/window/test-overview-map-cache.cpp \
 	test/window/test-shrunk-overview-map.cpp \
 	test/wizard/test-spoiler-util.cpp \

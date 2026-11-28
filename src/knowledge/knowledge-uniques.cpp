@@ -13,7 +13,7 @@
 #include "system/monrace/monrace-records.h"
 #include "system/player-type-definition.h"
 #include "util/angband-files.h"
-#include "util/buffer-shaper.h"
+#include "view/unique-monrace-lines.h"
 #include <fmt/format.h>
 
 class UniqueList {
@@ -109,18 +109,11 @@ static void display_uniques(UniqueList *unique_list_ptr, FILE *fff)
     }
 
     const auto &monraces = MonraceList::get_instance();
+    const UniqueMonraceLines unique_lines("     ", !unique_list_ptr->is_alive);
     for (auto monrace_id : unique_list_ptr->monrace_ids) {
         const auto &monrace = monraces.get_monrace(monrace_id);
-        std::string details;
-        if (!unique_list_ptr->is_alive && monrace.defeat_level && monrace.defeat_time) {
-            details = fmt::format(_(" - レベル{:2} - {}:{:02}:{:02}", " - level {:2} - {}:{:02}:{:02}"), monrace.defeat_level, monrace.defeat_time / (60 * 60), (monrace.defeat_time / 60) % 60, monrace.defeat_time % 60);
-        }
-
-        // shape_buffer() は表示幅 maxlen - 1 桁ごとに区切るので、名前の欄の幅 + 1 を渡す
-        const auto name = shape_buffer(monrace.name, 40 + 1);
-        fmt::println(fff, _("     {:<40} (レベル{:3}){}", "     {:<40} (level {:3}){}"), name.front(), (int)monrace.level, details);
-        for (auto i = 1U; i < name.size(); ++i) {
-            fmt::println(fff, "     {}", name[i]);
+        for (const auto &line : unique_lines.format(monrace)) {
+            fmt::println(fff, "{}", line);
         }
     }
 }

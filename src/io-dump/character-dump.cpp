@@ -46,6 +46,7 @@
 #include "util/int-char-converter.h"
 #include "util/string-processor.h"
 #include "view/display-messages.h"
+#include "view/unique-monrace-lines.h"
 #include "world/world.h"
 #include <algorithm>
 #include <fmt/format.h>
@@ -364,23 +365,10 @@ static void dump_aux_monsters(FILE *fff)
     const auto max_hour_digits = count_digits(max_defeat_time / (60 * 60));
 
     fmt::println(fff, _("\n《上位{}体のユニーク・モンスター》", "\n< Unique monsters top {} >"), top_display_num);
+    const UniqueMonraceLines unique_lines("  ", true, max_hour_digits);
     for (const auto &monrace : top_monraces) {
-        const auto defeat_level = monrace.defeat_level;
-        const auto defeat_time = monrace.defeat_time;
-        std::string defeat_info;
-        if ((defeat_level > 0) && (defeat_time > 0)) {
-            const auto defeat_hour = defeat_time / (60 * 60);
-            const auto defeat_minute = (defeat_time / 60) % 60;
-            const auto defeat_second = defeat_time % 60;
-            constexpr auto fmt = _(" - レベル{:2} - {:>{}}:{:02}:{:02}", " - level {:2} - {:>{}}:{:02}:{:02}");
-            defeat_info = fmt::format(fmt, defeat_level, defeat_hour, max_hour_digits, defeat_minute, defeat_second);
-        }
-
-        // shape_buffer() は表示幅 maxlen - 1 桁ごとに区切るので、名前の欄の幅 + 1 を渡す
-        const auto names = shape_buffer(monrace.name, 40 + 1);
-        fmt::println(fff, _("  {:<40} (レベル{:3}){}", "  {:<40} (level {:3}){}"), names.front(), monrace.level, defeat_info);
-        for (const auto &name : names | std::views::drop(1)) {
-            fmt::println(fff, "  {}", name);
+        for (const auto &line : unique_lines.format(monrace)) {
+            fmt::println(fff, "{}", line);
         }
     }
 }

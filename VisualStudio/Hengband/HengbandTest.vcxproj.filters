@@ -563,6 +563,9 @@
     <ClCompile Include="..\..\src\test\view\test-screen-parity-helpers.cpp">
       <Filter>view</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\view\test-unique-monrace-lines.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\window\test-overview-map-cache.cpp">
       <Filter>window</Filter>
     </ClCompile>
