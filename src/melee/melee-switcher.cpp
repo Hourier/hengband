@@ -96,7 +96,7 @@ void describe_melee_method(PlayerType *player_ptr, mam_type *mam_ptr)
         break;
     }
     case RaceBlowMethodType::CRUSH: {
-        mam_ptr->act = MonsterBlowFormat(_("{}を押し潰した", "crushes {}."));
+        mam_ptr->act = MonsterBlowFormat(_("{}を押し潰した。", "crushes {}."));
         mam_ptr->touched = true;
         break;
     }
