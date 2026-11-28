@@ -717,29 +717,29 @@ bool AutopickTextBody::insert_keymap_line()
 /*!
  * @brief 行の一部分を削除する
  * @param y 削除する行
- * @param x0 削除する範囲の先頭 (バイト)
- * @param x1 削除する範囲の終端 (バイト)
+ * @param x_start 削除する範囲の先頭 (バイト)
+ * @param x_end 削除する範囲の終端 (バイト)
  * @param whole 行全体の削除として、行そのものを消してよいか
  */
-void AutopickTextBody::kill_line_segment(int y, int x0, int x1, bool whole)
+void AutopickTextBody::kill_line_segment(int y, int x_start, int x_end, bool whole)
 {
     auto &s = this->lines[y].line;
-    if (whole && (x0 == 0) && (s[x1] == '\0') && !this->is_last_line(y)) {
+    if (whole && (x_start == 0) && (s[x_end] == '\0') && !this->is_last_line(y)) {
         this->lines.erase(this->lines.begin() + y);
         this->dirty_flags |= DIRTY_EXPRESSION;
         return;
     }
 
-    if (x0 == x1) {
+    if (x_start == x_end) {
         return;
     }
 
     std::string buf;
-    for (auto x = 0; x < x0; x++) {
+    for (auto x = 0; x < x_start; x++) {
         buf.push_back(s[x]);
     }
 
-    for (auto x = x1; s[x]; x++) {
+    for (auto x = x_end; s[x]; x++) {
         buf.push_back(s[x]);
     }
 

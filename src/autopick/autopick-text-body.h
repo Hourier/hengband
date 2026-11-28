@@ -98,5 +98,5 @@ public:
     void insert_single_letter(int key);
     bool insert_macro_line();
     bool insert_keymap_line();
-    void kill_line_segment(int y, int x0, int x1, bool whole);
+    void kill_line_segment(int y, int x_start, int x_end, bool whole);
 };
